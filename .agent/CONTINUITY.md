@@ -11,6 +11,7 @@
 - 2026-10-16T21:23Z [USER] User confirmed PR #27 merged; fetched `origin/main` at merge commit `98d2acf`. Task 27 started on `feature/27-blorb-media`.
 - 2026-10-16T21:30Z [CODE] Task 27 adds Blorb PNG/JPEG/Rect picture validation and Avalonia image decoding, AIFF PCM to WAV conversion, desktop macOS/Windows sample playback, Blorb desktop loading, and Z3 sound-effect resource dispatch. Ogg, tracker music, SONG, and V6 drawing remain unsupported.
 - 2026-10-16T21:30Z [TOOL] Task 27 formatter verification passed, Release build succeeded with 0 warnings/errors, and all 291 xUnit tests passed. Final diff review and PR publication pending.
+- 2026-10-16T21:34Z [TOOL] Task 27 commit `8ec3f54` is pushed on `feature/27-blorb-media`; PR #28 is open at `https://github.com/porcellian/GrueGPT/pull/28` for manual merge.
 - 2026-10-16T21:13Z [USER] User confirmed PR #26 merged; fetched `origin/main` contains merge commit `5e0654f`. Task 26 started on `feature/26-blorb-metadata`.
 - 2026-10-16T21:18Z [CODE] Added parsed Blorb metadata and Z-machine hints: IFmd, AUTH/(c)/ANNO, IFhd, RelN, RDes, Fspc, Plte, Reso, APal, and Loop. Parser validates chunk layouts, text encoding, singleton rules, references, ratio constraints, and Z3 sound repeat flags. Tests and final review pending.
 - 2026-10-16T21:21Z [TOOL] Task 26 formatter verification passed, Release build succeeded with 0 warnings/errors, and all 276 xUnit tests passed. Final diff review and PR publication pending.
