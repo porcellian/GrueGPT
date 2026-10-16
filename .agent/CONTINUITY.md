@@ -98,3 +98,6 @@
 - 2026-10-16T19:06Z [TOOL] Task 17 Release build succeeded with 0 warnings/errors; xUnit passed 206 tests; formatting verification and `git diff --check` passed.
 - 2026-10-16T19:09Z [TOOL] Supersedes the 19:06Z Task 17 verification count after the final branch-case regression test: Release build succeeded with 0 warnings/errors, xUnit passed 207 tests, and formatting verification passed.
 - 2026-10-16T19:11Z [TOOL] Local commit `a466344` and GitHub API commit `1ecd7a2` contain the same Task 17 tree; PR #18 is open at `https://github.com/porcellian/GrueGPT/pull/18` for manual merge. Apple Git HTTPS still crashes.
+- 2026-10-16T19:18Z [USER] User confirmed PR #18 merged; GitHub main is merge commit `6737716`, whose tree matches Task 17. Task 18 started on `feature/18-avalonia-screen`.
+- 2026-10-16T19:18Z [CODE] Task 18 replaces the desktop placeholder with an Avalonia renderer for Z3 screen snapshots, reference colors, status row, responsive Courier text, bottom-left prompt, window content, and UI-thread-safe updates; story selection and keyboard input remain Task 19.
+- 2026-10-16T19:18Z [TOOL] Task 18 Release build succeeded with 0 warnings/errors; xUnit passed 207 tests; formatting verification and `git diff --check` passed.

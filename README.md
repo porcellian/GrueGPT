@@ -103,7 +103,10 @@ overlays the upper window, tracks the lower-left input prompt, and formats score
 or time status. Its style metadata follows the supplied reference: blue play
 area, gray status strip, white play text, blue status text, and Courier New.
 The default logical screen is 80 columns by 25 rows; hosts may inject a model
-with dimensions that fit their display.
+with dimensions that fit their display. The Avalonia desktop window renders full
+screen snapshots with a responsive Courier-style size, the status strip, and a
+bottom-left prompt marker. The initial window is a visual shell; story selection,
+interactive command entry, and save-file dialogs are the next desktop task.
 
 ## Supported platforms
 
