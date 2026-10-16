@@ -2,13 +2,36 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="GrueGPT.Desktop.MainWindow"
         Title="GrueGPT"
-        Width="1000"
-        Height="760"
-        MinWidth="640"
-        MinHeight="480">
-  <Grid>
-    <TextBlock Text="GrueGPT — Z-machine v3"
-               HorizontalAlignment="Center"
-               VerticalAlignment="Center" />
+        Width="1400"
+        Height="1000"
+        MinWidth="800"
+        MinHeight="600"
+        SizeChanged="OnSizeChanged">
+  <Grid RowDefinitions="Auto,Auto,*">
+    <Menu Grid.Row="0" Background="#F4F4F4">
+      <MenuItem Header="_File">
+        <MenuItem Header="Open Story…" IsEnabled="False" />
+        <Separator />
+        <MenuItem Header="Exit" Click="OnExitClick" />
+      </MenuItem>
+      <MenuItem Header="_Tools" IsEnabled="False" />
+      <MenuItem Header="_Help" IsEnabled="False" />
+    </Menu>
+    <Border Grid.Row="1" Background="#E8E8E8" Padding="12,4">
+      <TextBlock x:Name="StatusText"
+                 Foreground="#0066CC"
+                 FontFamily="Courier New, Courier"
+                 FontSize="20"
+                 TextWrapping="NoWrap" />
+    </Border>
+    <Border Grid.Row="2" x:Name="PlayArea" Background="#0066CC" Padding="8">
+      <TextBlock x:Name="ScreenText"
+                 Foreground="White"
+                 FontFamily="Courier New, Courier"
+                 FontSize="28"
+                 LineHeight="32"
+                 TextWrapping="NoWrap"
+                 VerticalAlignment="Stretch" />
+    </Border>
   </Grid>
 </Window>
