@@ -189,6 +189,15 @@ public sealed class Z3ExecutionState
         ProgramCounter = address;
     }
 
+    /// <summary>Restores initial memory and execution state for the Version 3 restart opcode.</summary>
+    public void Restart()
+    {
+        Memory.ResetForRestart();
+        _frames.Clear();
+        _frames.Add(new Z3RoutineFrame(null, null, null, [], 0));
+        ProgramCounter = Header.InitialProgramCounter;
+    }
+
     private ushort ReadVariableWithoutStackEffect(byte variableNumber)
     {
         if (variableNumber <= 15)

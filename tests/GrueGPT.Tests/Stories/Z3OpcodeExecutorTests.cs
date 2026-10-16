@@ -290,6 +290,157 @@ public sealed class Z3OpcodeExecutorTests
         Assert.Contains("task 17", exception.Message);
     }
 
+    [Fact]
+    public async Task ReadsLowercaseInputIntoTextBufferAndTokenizesIt()
+    {
+        TestInterpreterIO io = new();
+        io.KeyboardLines.Enqueue("LOOK NORTH");
+        SyntheticStoryBuilder builder = new SyntheticStoryBuilder()
+            .WriteBytes(CodeAddress, [0xE4, 0x0F, 0x04, 0x00, 0x05, 0x00, 0xBA])
+            .WriteByte(0x0100, 0)
+            .WriteByte(0x0101, 7)
+            .WriteWord(0x0102, 0)
+            .WriteByte(0x0400, 10)
+            .WriteByte(0x0500, 8);
+        Z3ExecutionState state = CreateState(builder);
+        Z3OpcodeExecutor executor = new(state, io);
+
+        await executor.RunAsync();
+
+        Assert.Equal("look north\0", ReadZsciiText(state.Memory, 0x0400));
+        Assert.Equal((byte)2, state.Memory.ReadByte(0x0501));
+        Assert.Equal((byte)4, state.Memory.ReadByte(0x0504));
+        Assert.Equal((byte)1, state.Memory.ReadByte(0x0505));
+        Assert.Equal((byte)5, state.Memory.ReadByte(0x0508));
+        Assert.Equal((byte)6, state.Memory.ReadByte(0x0509));
+        Assert.Equal("LOOK NORTH\n", string.Concat(io.WrittenText));
+        Assert.Single(io.Statuses);
+    }
+
+    [Fact]
+    public async Task PlaybackInputIsTruncatedEchoedAndRecordedAsOneCompletedCommand()
+    {
+        byte[] code =
+        [
+            0xF4, 0x7F, 1, // input_stream 1
+            0xF3, 0x7F, 4, // output_stream 4
+            0xE4, 0x0F, 0x04, 0x00, 0x05, 0x00, // read text $0400 parse $0500
+            0xBA
+        ];
+        TestInterpreterIO io = new();
+        io.PlaybackCommands.Enqueue("NORTH");
+        SyntheticStoryBuilder builder = new SyntheticStoryBuilder()
+            .WriteBytes(CodeAddress, code)
+            .WriteByte(0x0100, 0)
+            .WriteByte(0x0101, 7)
+            .WriteWord(0x0102, 0)
+            .WriteByte(0x0400, 4)
+            .WriteByte(0x0500, 1);
+        Z3ExecutionState state = CreateState(builder);
+
+        await new Z3OpcodeExecutor(state, io).RunAsync();
+
+        Assert.Equal("nort\0", ReadZsciiText(state.Memory, 0x0400));
+        Assert.Equal("NORT\n", string.Concat(io.WrittenText));
+        Assert.Equal("NORT", Assert.Single(io.RecordedCommands));
+    }
+
+    [Fact]
+    public async Task OutputStreamThreeWritesZsciiAndFinalizesItsCount()
+    {
+        byte[] code =
+        [
+            0xF3, 0x4F, 3, 0x04, 0x00, // output_stream 3 table $0400
+            0xE5, 0x7F, 65, // print_char 'A'
+            0xBB, // new_line
+            0xF3, 0x3F, 0xFF, 0xFD, // output_stream -3
+            0xBA
+        ];
+        TestInterpreterIO io = new();
+        Z3ExecutionState state = CreateState(code);
+        Z3OpcodeExecutor executor = new(state, io);
+
+        await executor.RunAsync();
+
+        Assert.Equal((ushort)2, state.Memory.ReadWord(0x0400));
+        Assert.Equal((byte)'A', state.Memory.ReadByte(0x0402));
+        Assert.Equal((byte)13, state.Memory.ReadByte(0x0403));
+        Assert.Empty(io.WrittenText);
+    }
+
+    [Fact]
+    public async Task MemoryOutputStreamSuppressesSelectedScreenAndTranscriptStreams()
+    {
+        byte[] code =
+        [
+            0xF3, 0x7F, 2, // output_stream 2
+            0xF3, 0x4F, 3, 0x04, 0x00, // output_stream 3 table $0400
+            0xE5, 0x7F, 65, // print_char 'A'
+            0xF3, 0x3F, 0xFF, 0xFD, // output_stream -3
+            0xF3, 0x3F, 0xFF, 0xFE, // output_stream -2
+            0xBA
+        ];
+        TestInterpreterIO io = new();
+        Z3ExecutionState state = CreateState(code);
+
+        await new Z3OpcodeExecutor(state, io).RunAsync();
+
+        Assert.Equal((ushort)1, state.Memory.ReadWord(0x0400));
+        Assert.Equal((byte)'A', state.Memory.ReadByte(0x0402));
+        Assert.Empty(io.WrittenText);
+        Assert.Empty(io.TranscriptText);
+    }
+
+    [Fact]
+    public async Task TranscriptSelectionTracksFlagsAndCapturesStoryOutput()
+    {
+        byte[] code =
+        [
+            0xF3, 0x7F, 2, // output_stream 2
+            0xE5, 0x7F, 65, // print_char 'A'
+            0xF3, 0x3F, 0xFF, 0xFE, // output_stream -2
+            0xBA
+        ];
+        TestInterpreterIO io = new();
+        Z3ExecutionState state = CreateState(code);
+        Z3OpcodeExecutor executor = new(state, io);
+
+        await executor.RunAsync();
+
+        Assert.Equal("A", string.Concat(io.TranscriptText));
+        Assert.Equal((byte)0, (byte)(state.Memory.ReadByte(Z3Memory.Flags2Address + 1) & 0x01));
+        Assert.Equal("A", string.Concat(io.WrittenText));
+    }
+
+    [Fact]
+    public async Task RestartRestoresMemoryStackAndPcWhilePreservingFlags2BitsZeroAndOne()
+    {
+        Z3ExecutionState state = CreateState([0xB7]);
+        state.Memory.WriteWord(GlobalVariablesAddress, 0xCAFE);
+        state.Memory.WriteByte(Z3Memory.Flags2Address + 1, 0x03);
+        state.PushStack(123);
+        Z3OpcodeExecutor executor = new(state, new TestInterpreterIO());
+
+        await executor.ExecuteNextAsync();
+
+        Assert.Equal(CodeAddress, state.ProgramCounter);
+        Assert.Equal((ushort)0, state.Memory.ReadWord(GlobalVariablesAddress));
+        Assert.Equal((byte)0x03, (byte)(state.Memory.ReadByte(Z3Memory.Flags2Address + 1) & 0x03));
+        Assert.Equal(0, state.EvaluationStackDepth);
+    }
+
+    [Fact]
+    public async Task RunReportsFatalStoryErrorsBeforeRethrowingThem()
+    {
+        TestInterpreterIO io = new();
+        Z3OpcodeExecutor executor = new(CreateState([0xBF]), io);
+
+        InvalidDataException exception = await Assert.ThrowsAsync<InvalidDataException>(async () => await executor.RunAsync());
+
+        Assert.Contains("0x2001", Assert.Single(io.Errors));
+        Assert.Contains(exception.Message, io.Errors[0]);
+    }
+
     private static Z3ExecutionState CreateState(byte[] code, byte[]? routine = null, int codeAtRoutine = 0)
     {
         SyntheticStoryBuilder builder = new SyntheticStoryBuilder()
@@ -308,11 +459,39 @@ public sealed class Z3OpcodeExecutorTests
         return new Z3ExecutionState(new Z3StoryLoader().Load(stream));
     }
 
-    private sealed class TestInterpreterIO : IInterpreterIO
+    private static string ReadZsciiText(Z3Memory memory, int address)
+    {
+        int maximumCharacters = memory.ReadByte(address);
+        char[] characters = new char[maximumCharacters + 1];
+        for (int index = 0; index <= maximumCharacters; index++)
+        {
+            byte code = memory.ReadByte(address + 1 + index);
+            if (code == 0)
+            {
+                return new string(characters, 0, index) + '\0';
+            }
+
+            characters[index] = Z3TextDecoder.ToUnicodeCharacter(code) ?? '\0';
+        }
+
+        return new string(characters);
+    }
+
+    private sealed class TestInterpreterIO : IInterpreterIO, IZ3StreamIO
     {
         public List<string> WrittenText { get; } = [];
 
         public List<StoryStatus> Statuses { get; } = [];
+
+        public List<string> TranscriptText { get; } = [];
+
+        public List<string> RecordedCommands { get; } = [];
+
+        public List<string> Errors { get; } = [];
+
+        public Queue<string?> KeyboardLines { get; } = new();
+
+        public Queue<string?> PlaybackCommands { get; } = new();
 
         public ValueTask WriteTextAsync(string text, CancellationToken cancellationToken = default)
         {
@@ -327,6 +506,27 @@ public sealed class Z3OpcodeExecutorTests
         }
 
         public ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken = default) =>
-            ValueTask.FromResult<string?>(null);
+            ValueTask.FromResult(KeyboardLines.TryDequeue(out string? line) ? line : null);
+
+        public ValueTask ReportErrorAsync(string message, CancellationToken cancellationToken = default)
+        {
+            Errors.Add(message);
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask WriteTranscriptAsync(string text, CancellationToken cancellationToken = default)
+        {
+            TranscriptText.Add(text);
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask<string?> ReadPlaybackCommandAsync(CancellationToken cancellationToken = default) =>
+            ValueTask.FromResult(PlaybackCommands.TryDequeue(out string? command) ? command : null);
+
+        public ValueTask WriteRecordedCommandAsync(string command, CancellationToken cancellationToken = default)
+        {
+            RecordedCommands.Add(command);
+            return ValueTask.CompletedTask;
+        }
     }
 }

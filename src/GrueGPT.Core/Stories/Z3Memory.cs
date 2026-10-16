@@ -46,6 +46,14 @@ public sealed class Z3Memory
         return _originalBytes[address];
     }
 
+    /// <summary>Restores the original story bytes while retaining transcript and fixed-font flags.</summary>
+    public void ResetForRestart()
+    {
+        byte retainedFlags2 = (byte)(_bytes[Flags2Address + 1] & 0x03);
+        Array.Copy(_originalBytes, _bytes, _bytes.Length);
+        _bytes[Flags2Address + 1] = (byte)((_bytes[Flags2Address + 1] & ~0x03) | retainedFlags2);
+    }
+
     public ushort ReadWord(int address)
     {
         ValidateByteAddress(address);
