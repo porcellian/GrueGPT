@@ -19,7 +19,7 @@ Each checkbox is a separate task and pull request. The explicit `Task N` labels 
 - [x] **Task 10:** Implement the Z3 dictionary format, tokenization, input-buffer layout, and parser-buffer updates.
 - [x] **Task 11:** Implement the legal Z3 opcode set, including arithmetic, comparisons, control flow, object/property, text, random, memory/table, and call operations.
 - [x] **Task 12:** Implement Z3 line input, command editing, terminating characters, output streams, transcript behavior, restart, and error reporting.
-- [ ] **Task 13:** Implement the Z3 screen model, status line (location, score, moves), colors, fixed-width font, prompt placement, and upward-scrolling text.
+- [x] **Task 13:** Implement the Z3 screen model, status line (location, score, moves), colors, fixed-width font, prompt placement, and upward-scrolling text.
 
 ## Quetzal save and restore for Z3
 

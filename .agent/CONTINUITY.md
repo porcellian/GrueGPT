@@ -35,12 +35,16 @@
 - 2026-10-16T16:30Z [TOOL] Task 11 commit `0498b85` was pushed; PR #12 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/12`.
 - 2026-10-16T16:38Z [USER] User confirmed PR #12 merged; fetched `origin/main` contains merge commit `e3b1553`, and task 12 is underway on `feature/12-z3-input-streams-lifecycle`.
 - 2026-10-16T16:45Z [TOOL] Task 12 commit `e76bf65` was pushed; PR #13 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/13`.
+- 2026-10-16T17:39Z [USER] User confirmed PR #13 merged; fetched `origin/main` contains merge commit `4056b5a`, and task 13 is underway on `feature/13-z3-screen-model`.
+- 2026-10-16T17:43Z [TOOL] Task 13 commit `847535e` is local and verified. Push attempts fail because Apple Git's HTTPS helper crashes (`dyld: missing symbol called`); `gh auth status` reports an invalid token and SSH reports `Permission denied (publickey)`. PR #14 is not created; retry after GitHub authentication is restored.
+- 2026-10-16T17:59Z [TOOL] Supersedes the 17:43Z push blocker: host `gh` authentication is valid; Apple Git HTTPS still crashes, so GitHub's Git Data API published the Task 13 tree on `feature/13-z3-screen-model` as commit `5fa90eb`; PR #14 is open at `https://github.com/porcellian/GrueGPT/pull/14` for manual merge. The local and remote trees match; their commit histories differ because the API-created commit has a different parent/metadata layout.
 
 ## [DISCOVERIES]
 - 2026-10-16T16:07Z [CODE] Version 3 dictionaries use 4-byte encoded words padded to six Z-characters; negative entry counts indicate an unsorted user dictionary. Parse entries store dictionary address, token length, and one-based text-buffer position.
 - 2026-10-16T15:47Z [CODE] Version 3 property headers encode lengths 1–8 in their upper three bits and property numbers 1–31 in their lower five; attributes are stored most-significant-bit first. Property lists descend by property number.
 - 2026-10-16T16:24Z [CODE] Variable-form `je` supports two through four operands; opcode execution defers variable reads so indirect stack targets are not consumed as values. `verify` checks the immutable loaded image because runtime writes can change dynamic memory.
 - 2026-10-16T16:43Z [CODE] Version 3 read consumes host-completed lines, stores lower-case text and tokenizes it; hosts own editing. Stream 3 nests up to 16 tables and suppresses streams 1/2 while selected. Transcript and command-file streams are optional host capabilities; restart preserves Flags 2 bits 0–1.
+- 2026-10-16T17:39Z [TOOL] ZSpec 1.1 requires v3 status refresh only for `show_status` and before `read`; its lower window scrolls upward and upper window clears on split without scrolling. Task 13 sets Flags 1 bit 5 to advertise supported window splitting.
 - 2026-10-16T03:49Z [TOOL] Local .NET SDK is 10.0.400.
 - 2026-10-16T05:05Z [TOOL] xUnit and Roslyn format checks require elevated execution in this sandbox because their local socket/pipe setup is blocked; both passed when rerun elevated.
 - 2026-10-16T05:55Z [TOOL] Z-Machine Standard 1.1 specifies v3 file-length units of 2 bytes, checksum coverage from byte 0x40 to logical file length, a 128 KiB v1-v3 size limit, and legacy v3 files that may omit length/checksum.
@@ -53,6 +57,8 @@
 - 2026-10-16T16:24Z [TOOL] Task 11 Release build succeeded with 0 warnings/errors; xUnit passed 113 tests; `dotnet format --verify-no-changes` and `git diff --check` passed.
 - 2026-10-16T16:43Z [CODE] Task 12 adds Version 3 line input, playback and recording hooks, transcript and output stream routing, restart state reset, and host error reporting; README and checklist updated.
 - 2026-10-16T16:43Z [TOOL] Task 12 Release build succeeded with 0 warnings/errors; xUnit passed 120 tests; `dotnet format --verify-no-changes` and `git diff --check` passed.
+- 2026-10-16T17:39Z [CODE] Task 13 adds `Z3ScreenModel`, status layout, v3 window cursors, scrolling/wrapping, prompt location, reference palette/font metadata, and optional screen snapshot callbacks; README and checklist updated.
+- 2026-10-16T17:39Z [TOOL] Task 13 Release build succeeded with 0 warnings/errors; xUnit passed 132 tests; `dotnet format --verify-no-changes` and `git diff --check` passed.
 - 2026-10-16T16:07Z [CODE] Task 10 adds `Z3Dictionary` and `Z3Tokenizer` for Version 3 headers, dictionary ordering/search, six-Z-character case-folded encoding, text-buffer splitting, and bounded parse-buffer updates; README and checklist were updated.
 - 2026-10-16T16:07Z [TOOL] Task 10 Release build succeeded with 0 warnings/errors; xUnit passed 96 tests; `dotnet format --verify-no-changes` and `git diff --check` passed.
 - 2026-10-16T15:47Z [CODE] Task 9 adds `Z3ObjectTable` for object links, attributes, defaults, property lookup/length/value updates, and remove/insert operations; README and checklist were updated.

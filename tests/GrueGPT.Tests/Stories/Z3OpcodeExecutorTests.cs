@@ -249,6 +249,8 @@ public sealed class Z3OpcodeExecutorTests
         await executor.ExecuteNextAsync();
 
         Assert.Equal(new StoryStatus("a", 12, 34), Assert.Single(io.Statuses));
+        Assert.StartsWith("a", executor.Screen.StatusLine);
+        Assert.EndsWith("Score: 12  Moves: 34", executor.Screen.StatusLine);
     }
 
     [Fact]
@@ -315,6 +317,32 @@ public sealed class Z3OpcodeExecutorTests
         Assert.Equal((byte)6, state.Memory.ReadByte(0x0509));
         Assert.Equal("LOOK NORTH\n", string.Concat(io.WrittenText));
         Assert.Single(io.Statuses);
+        Assert.Contains(io.ScreenSnapshots, snapshot => snapshot.IsPromptVisible);
+        Assert.False(executor.Screen.IsPromptVisible);
+    }
+
+    [Fact]
+    public async Task EnablesVersionThreeScreenCapabilitiesAndTracksWindowInstructions()
+    {
+        byte[] code =
+        [
+            0xEA, 0x7F, 2, // split_window 2
+            0xEB, 0x7F, 1, // set_window 1
+            0xE5, 0x7F, 65, // print_char 'A'
+            0xEB, 0x7F, 0, // set_window 0
+            0xBA
+        ];
+        TestInterpreterIO io = new();
+        Z3ExecutionState state = CreateState(code);
+        Z3OpcodeExecutor executor = new(state, io);
+
+        await executor.RunAsync();
+
+        Assert.Equal((byte)0x20, (byte)(state.Memory.ReadByte(Z3Memory.Flags1Address) & 0x30));
+        Assert.Equal((byte)0, executor.CurrentWindow);
+        Assert.Equal((ushort)2, executor.UpperWindowHeight);
+        Assert.Equal(new[] { "A", "" }, executor.Screen.UpperWindowLines);
+        Assert.Contains(io.ScreenSnapshots, snapshot => snapshot.CurrentWindow == 1);
     }
 
     [Fact]
@@ -477,11 +505,13 @@ public sealed class Z3OpcodeExecutorTests
         return new string(characters);
     }
 
-    private sealed class TestInterpreterIO : IInterpreterIO, IZ3StreamIO
+    private sealed class TestInterpreterIO : IInterpreterIO, IZ3StreamIO, IZ3ScreenIO
     {
         public List<string> WrittenText { get; } = [];
 
         public List<StoryStatus> Statuses { get; } = [];
+
+        public List<Z3ScreenSnapshot> ScreenSnapshots { get; } = [];
 
         public List<string> TranscriptText { get; } = [];
 
@@ -511,6 +541,12 @@ public sealed class Z3OpcodeExecutorTests
         public ValueTask ReportErrorAsync(string message, CancellationToken cancellationToken = default)
         {
             Errors.Add(message);
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask PresentScreenAsync(Z3ScreenSnapshot snapshot, CancellationToken cancellationToken = default)
+        {
+            ScreenSnapshots.Add(snapshot);
             return ValueTask.CompletedTask;
         }
 
