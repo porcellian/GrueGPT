@@ -168,8 +168,11 @@ requires one leading resource index, and resolves indexed resource offsets to
 their chunks. `BlorbFile.GetZCodeExecutable()` exposes the bytes of an indexed
 `Exec`/0 `ZCOD` resource. Unknown chunk and usage identifiers are retained for
 forward compatibility. This parser is a Core API; the desktop and CLI still
-load raw story files. Picture, sound, and metadata interpretation is not yet
-connected to the interpreter.
+load raw story files. `BlorbFile.Metadata` reads IFmd XML, ASCII author,
+copyright and annotation chunks, UTF-8 resource descriptions, frontispiece references,
+palette and resolution hints, game identity, release number, adaptive palette
+picture numbers, and Version 3 sound-loop hints. Picture and sound decoding,
+rendering, and playback are not yet connected to the interpreter.
 
 ## Command-line runner
 

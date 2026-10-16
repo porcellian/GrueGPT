@@ -10,6 +10,7 @@ public sealed class BlorbFile
     {
         _chunks = Array.AsReadOnly(chunks.ToArray());
         _resources = Array.AsReadOnly(resources.ToArray());
+        Metadata = BlorbMetadata.Parse(_chunks, _resources);
     }
 
     /// <summary>All chunks, including the leading RIdx chunk, in file order.</summary>
@@ -17,6 +18,9 @@ public sealed class BlorbFile
 
     /// <summary>Resources in their resource-index order.</summary>
     public IReadOnlyList<BlorbResource> Resources => _resources;
+
+    /// <summary>Validated optional metadata and Z-machine resource hints.</summary>
+    public BlorbMetadata Metadata { get; }
 
     /// <summary>Finds the first resource matching a usage and number.</summary>
     public BlorbResource? FindResource(string usage, uint number) =>
