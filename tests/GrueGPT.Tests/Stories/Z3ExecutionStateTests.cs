@@ -1,3 +1,4 @@
+using GrueGPT.Core.SaveFiles;
 using GrueGPT.Core.Stories;
 using GrueGPT.Tests.TestUtilities;
 using Xunit;
@@ -119,6 +120,48 @@ public sealed class Z3ExecutionStateTests
         state.Jump(0xFFFC);
 
         Assert.Equal(0x200A, state.ProgramCounter);
+    }
+
+    [Fact]
+    public void QuetzalStackSnapshotRestoresTopLevelAndRoutineExecutionState()
+    {
+        SyntheticStoryBuilder builder = new();
+        builder.WriteByte(0x2200, 2).WriteWord(0x2201, 0x1111).WriteWord(0x2203, 0x2222);
+        Z3ExecutionState original = CreateState(builder);
+        original.SetProgramCounter(0x2010);
+        original.PushStack(0x7777);
+        original.CallRoutine(Z3Memory.PackAddress(0x2200), [0xAAAA, 0xBBBB], resultVariable: 0);
+        original.PushStack(0x3333);
+
+        QuetzalChunk chunk = QuetzalStackCodec.CreateStksChunk(original.CreateStackSnapshot());
+        QuetzalStackState snapshot = QuetzalStackCodec.ReadStksChunk(chunk);
+        Z3ExecutionState restored = CreateState(builder);
+        restored.RestoreStackSnapshot(snapshot, 0x2210);
+
+        Assert.Equal(1, restored.CallDepth);
+        Assert.Equal(2, restored.CurrentArgumentCount);
+        Assert.Equal((ushort)0xAAAA, restored.ReadVariableValue(1));
+        Assert.Equal((ushort)0xBBBB, restored.ReadVariableValue(2));
+        Assert.Equal((ushort)0x3333, restored.PopStack());
+        restored.ReturnFromRoutine(0x1234);
+        Assert.Equal(0x2010, restored.ProgramCounter);
+        Assert.Equal((ushort)0x1234, restored.PopStack());
+        Assert.Equal((ushort)0x7777, restored.PopStack());
+    }
+
+    [Fact]
+    public void InvalidStackSnapshotLeavesExecutionStateUnchanged()
+    {
+        Z3ExecutionState state = CreateState(new SyntheticStoryBuilder());
+        state.SetProgramCounter(0x2010);
+        state.PushStack(0x1234);
+        QuetzalStackState invalid = new([], [new QuetzalStackFrame(0xFFFFFF, false, 0, 0, [], [])]);
+
+        Assert.Throws<InvalidDataException>(() => state.RestoreStackSnapshot(invalid, 0x2020));
+
+        Assert.Equal(0x2010, state.ProgramCounter);
+        Assert.Equal((ushort)0x1234, state.PopStack());
+        Assert.Equal(0, state.CallDepth);
     }
 
     private static Z3ExecutionState CreateState(SyntheticStoryBuilder builder)

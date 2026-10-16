@@ -79,14 +79,17 @@ windows and accepts sound-effect instructions without requiring a sound device.
 `QuetzalFileCodec` reads and writes the IFF `FORM/IFZS` container used by
 Quetzal. It validates big-endian form and chunk lengths, printable identifiers,
 chunk bounds, and zero padding for odd-length chunks. Chunk order, duplicates,
-and unknown chunk data are preserved. Stack serialization and save/restore
-execution semantics remain in the following save-file tasks.
+and unknown chunk data are preserved.
 
 `QuetzalIfhd` reads and writes the standard 13-byte story identity and
 three-byte resume PC. `QuetzalMemoryCodec` writes CMem XOR/run-length data,
 restores shortened CMem tails as unchanged story bytes, and reads/writes UMem
-only when its size exactly matches dynamic memory. Stack serialization and
-save/restore execution semantics are handled by the following tasks.
+only when its size exactly matches dynamic memory. `QuetzalStackCodec`
+serializes and restores Version 3 top-level evaluation
+values, the required dummy frame, and oldest-first call frames with locals,
+argument masks, result behavior, and per-frame evaluation stacks. The execution
+state can snapshot and restore these stacks together with a supplied resume PC;
+story SAVE/RESTORE instructions and UI actions are handled by the next task.
 
 `Z3ScreenModel` provides the Version 3 status row and separate upper and lower
 windows. It wraps fixed-width text, scrolls the lower window upward, clears and

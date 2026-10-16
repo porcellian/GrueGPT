@@ -1,3 +1,5 @@
+using GrueGPT.Core.SaveFiles;
+
 namespace GrueGPT.Core.Stories;
 
 /// <summary>Version 3 program counter, routine frames, variables, and evaluation stacks.</summary>
@@ -36,6 +38,81 @@ public sealed class Z3ExecutionState
     public int? CurrentRoutineAddress => CurrentFrame.RoutineAddress;
 
     public int EvaluationStackDepth => CurrentFrame.Stack.Count;
+
+    /// <summary>Creates a Quetzal-compatible snapshot of all active Version 3 frames and stacks.</summary>
+    public QuetzalStackState CreateStackSnapshot()
+    {
+        QuetzalStackFrame[] frames = _frames.Skip(1)
+            .Select(static frame => new QuetzalStackFrame(
+                frame.ReturnAddress!.Value,
+                frame.ResultVariable is null,
+                frame.ResultVariable ?? 0,
+                frame.ArgumentMask,
+                frame.Locals,
+                frame.Stack.Reverse()))
+            .ToArray();
+
+        return new QuetzalStackState(_frames[0].Stack.Reverse(), frames);
+    }
+
+    /// <summary>Restores all stack frames and sets the program counter from a validated save.</summary>
+    public void RestoreStackSnapshot(QuetzalStackState snapshot, int programCounter)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        if (programCounter < 0 || programCounter >= Memory.Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(programCounter), "The program counter must point inside the story image.");
+        }
+
+        if (snapshot.TopLevelEvaluationStack.Count > ushort.MaxValue)
+        {
+            throw new InvalidDataException("The top-level evaluation stack exceeds the Stks format limit.");
+        }
+
+        List<Z3RoutineFrame> restoredFrames =
+        [new Z3RoutineFrame(null, null, null, [], 0)];
+        restoredFrames[0].StackLoad(snapshot.TopLevelEvaluationStack);
+
+        foreach (QuetzalStackFrame frame in snapshot.Frames)
+        {
+            if (frame.ReturnProgramCounter < 0 || frame.ReturnProgramCounter >= Memory.Length)
+            {
+                throw new InvalidDataException("A saved frame return address is outside the story image.");
+            }
+
+            if (frame.Locals.Count > 15 || frame.EvaluationStack.Count > ushort.MaxValue || frame.ArgumentMask > 0x7F
+                || (frame.DiscardResult && frame.ResultVariable != 0))
+            {
+                throw new InvalidDataException("A saved frame contains invalid Version 3 frame metadata.");
+            }
+
+            Z3RoutineFrame restored = new(
+                null,
+                frame.ReturnProgramCounter,
+                frame.DiscardResult ? null : frame.ResultVariable,
+                frame.Locals.ToArray(),
+                CountArguments(frame.ArgumentMask),
+                frame.ArgumentMask);
+            restored.StackLoad(frame.EvaluationStack);
+            restoredFrames.Add(restored);
+        }
+
+        _frames.Clear();
+        _frames.AddRange(restoredFrames);
+        ProgramCounter = programCounter;
+    }
+
+    private static int CountArguments(byte argumentMask)
+    {
+        int count = 0;
+        while (argumentMask != 0)
+        {
+            count += argumentMask & 1;
+            argumentMask >>= 1;
+        }
+
+        return count;
+    }
 
     private Z3RoutineFrame CurrentFrame => _frames[^1];
 
@@ -155,7 +232,8 @@ public sealed class Z3ExecutionState
             ProgramCounter,
             resultVariable,
             locals,
-            arguments.Count));
+            arguments.Count,
+            (byte)((1 << arguments.Count) - 1)));
         SetProgramCounter(nextAddress);
     }
 
@@ -238,8 +316,17 @@ public sealed class Z3ExecutionState
         int? ReturnAddress,
         byte? ResultVariable,
         ushort[] Locals,
-        int ArgumentCount)
+        int ArgumentCount,
+        byte ArgumentMask = 0)
     {
         public Stack<ushort> Stack { get; } = new();
+
+        public void StackLoad(IEnumerable<ushort> values)
+        {
+            foreach (ushort value in values)
+            {
+                Stack.Push(value);
+            }
+        }
     }
 }
