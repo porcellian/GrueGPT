@@ -8,6 +8,7 @@ GrueGPT is a C# Z-machine interpreter project. Its first playable milestone targ
 - `src/GrueGPT.Desktop` contains the Avalonia desktop app for macOS and Windows.
 - `src/GrueGPT.Cli` contains the command-line runner.
 - `tests/GrueGPT.Tests` contains xUnit tests.
+- `tests/GrueGPT.Tests/TestUtilities` contains generated story builders and shared test helpers; CI does not require local or copyrighted story files.
 - `specs` and `reference` contain the project specifications and initial GUI reference.
 - `stories` is for local playtesting. Story files are ignored by Git unless an individual open-source file is explicitly authorized for tracking.
 

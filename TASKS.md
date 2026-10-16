@@ -6,7 +6,7 @@ Each checkbox is a separate task and pull request. Before starting a task, creat
 
 1. [x] Establish the .NET solution, project layout, test project, cross-platform CI, project guidance, and this roadmap. Keep story files local and ignored by default.
 2. [x] Select and add a project license; document provenance and redistribution rules for the standards and GUI reference before publishing releases.
-3. [ ] Add a synthetic story-file builder and shared test utilities so all CI tests run without copyrighted story files.
+3. [x] Add a synthetic story-file builder and shared test utilities so all CI tests run without copyrighted story files.
 
 ## Z-machine version 3 interpreter
 
