@@ -38,6 +38,12 @@ ZSCII escape sequences, and maps defined output characters to Unicode. Custom
 alphabet tables and later-version Unicode translation tables are outside the
 Version 3 scope.
 
+`Z3ObjectTable` reads the Version 3 property defaults, 9-byte object entries,
+attributes, and descending property lists. It supports property lookup and
+updates, property length queries, and object removal/insertion in the object
+tree. Object attributes and property writes use the dynamic-memory rules from
+`Z3Memory`.
+
 `Z3InstructionDecoder` reads v3 long, short, and variable instruction forms,
 evaluates variable operands in order, and records store, branch, and inline
 text data while advancing the program counter. `Z3ExecutionState` manages

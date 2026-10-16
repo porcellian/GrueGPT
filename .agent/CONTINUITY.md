@@ -27,8 +27,11 @@
 - 2026-10-16T15:09Z [TOOL] Task 7 commit `66cd0bc` is pushed on `feature/7-zmachine-text-decoder`; PR #8 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/8`.
 - 2026-10-16T15:23Z [USER] User confirmed PR #8 merged; fetched `origin/main` is `32ba183`, and task 8 is underway on `feature/8-z3-instruction-execution`.
 - 2026-10-16T15:27Z [TOOL] Task 8 commit `7c3d357` is pushed on `feature/8-z3-instruction-execution`; PR #9 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/9`.
+- 2026-10-16T15:47Z [USER] User confirmed PR #9 merged; fetched `origin/main` advanced to `5050f79`, and task 9 started on `feature/9-z3-objects-properties` (supersedes the PR #9 open status above).
+- 2026-10-16T15:57Z [TOOL] Task 9 commit `a3bb2f7` was pushed on `feature/9-z3-objects-properties`; PR #10 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/10`.
 
 ## [DISCOVERIES]
+- 2026-10-16T15:47Z [CODE] Version 3 property headers encode lengths 1–8 in their upper three bits and property numbers 1–31 in their lower five; attributes are stored most-significant-bit first. Property lists descend by property number.
 - 2026-10-16T03:49Z [TOOL] Local .NET SDK is 10.0.400.
 - 2026-10-16T05:05Z [TOOL] xUnit and Roslyn format checks require elevated execution in this sandbox because their local socket/pipe setup is blocked; both passed when rerun elevated.
 - 2026-10-16T05:55Z [TOOL] Z-Machine Standard 1.1 specifies v3 file-length units of 2 bytes, checksum coverage from byte 0x40 to logical file length, a 128 KiB v1-v3 size limit, and legacy v3 files that may omit length/checksum.
@@ -37,6 +40,8 @@
 - 2026-10-16T15:23Z [TOOL] Instruction forms are distinguished by the top two bits: `$00–$7F` long, `$80–$BF` short, and `$C0–$FF` variable. Variable zero pops for value reads and pushes for result stores; indirect operations inspect or replace the existing stack top.
 
 ## [OUTCOMES]
+- 2026-10-16T15:47Z [CODE] Task 9 adds `Z3ObjectTable` for object links, attributes, defaults, property lookup/length/value updates, and remove/insert operations; README and checklist were updated.
+- 2026-10-16T15:47Z [TOOL] Task 9 Release build succeeded with 0 warnings/errors; xUnit passed 84 tests; `dotnet format --verify-no-changes` and `git diff --check` passed.
 - 2026-10-16T04:03Z [TOOL] Foundation build succeeded with 0 warnings/errors; xUnit passed 1 test; `dotnet format --verify-no-changes` passed. Linux is not in CI.
 - 2026-10-16T04:10Z [TOOL] After the Windows CI fix, formatting passed, Release build had 0 warnings/errors, and xUnit passed 1 test.
 - 2026-10-16T04:32Z [CODE] Task 2 adds an MIT license for GrueGPT, identifies third-party attribution and redistribution status in `THIRD_PARTY_NOTICES.md`, and links the notice from README.
