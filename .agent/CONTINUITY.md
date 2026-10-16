@@ -16,7 +16,9 @@
 - 2026-10-16T05:05Z [TOOL] User confirmed PR #2 merged; fetched `origin/main` is at `ce2f0d0` and task 3 is underway on `feature/3-synthetic-story-test-utils`.
 - 2026-10-16T05:05Z [TOOL] Task 3 commit `36dca84` was pushed on `feature/3-synthetic-story-test-utils`; user later confirmed PR #3 merged, and fetched `origin/main` contains merge commit `0ce2122`.
 - 2026-10-16T05:20Z [USER] User requested globally visible task IDs in `TASKS.md`; preserve IDs 1–32 and label them explicitly so Markdown section boundaries cannot restart numbering.
-- 2026-10-16T05:20Z [TOOL] Numbering fix commit `71b4ec1` is pushed on `fix/task-number-labels`; PR #4 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/4`.
+- 2026-10-16T05:20Z [TOOL] Numbering fix commit `71b4ec1` was pushed on `fix/task-number-labels`; PR #4 was opened at `https://github.com/porcellian/GrueGPT/pull/4` and user later confirmed it merged.
+- 2026-10-16T05:35Z [TOOL] User confirmed PR #4 merged; fetched `origin/main` is at `57a7ae1`, and task 4 is underway on `feature/4-interpreter-boundaries`.
+- 2026-10-16T05:35Z [TOOL] Task 4 commit `8a2b92e` is pushed on `feature/4-interpreter-boundaries`; PR #5 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/5`.
 
 ## [DISCOVERIES]
 - 2026-10-16T03:49Z [TOOL] Local .NET SDK is 10.0.400.
@@ -28,3 +30,5 @@
 - 2026-10-16T04:32Z [CODE] Task 2 adds an MIT license for GrueGPT, identifies third-party attribution and redistribution status in `THIRD_PARTY_NOTICES.md`, and links the notice from README.
 - 2026-10-16T05:05Z [TOOL] Task 3 Release build passed with 0 warnings/errors; xUnit passed 8 tests; `dotnet format --verify-no-changes` passed. Tests use the new deterministic synthetic Z3 image builder with configurable headers/checksum and generated memory fixtures.
 - 2026-10-16T05:20Z [CODE] `TASKS.md` now uses explicit `Task N` labels on checkbox bullets, preserving all existing task IDs from 1 through 32 across section headings.
+- 2026-10-16T05:35Z [CODE] Task 4 defines async story-session and host I/O contracts and references Core from the desktop project; both front ends can use the same contract without the engine depending on UI APIs.
+- 2026-10-16T05:35Z [TOOL] Task 4 Release build passed with 0 warnings/errors; xUnit passed 8 tests; `dotnet format --verify-no-changes` passed.
