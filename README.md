@@ -129,6 +129,12 @@ dotnet test GrueGPT.sln --no-build
 
 See [TASKS.md](TASKS.md) for the staged implementation roadmap. The initial CI matrix runs on macOS and Windows.
 
+The xUnit suite builds synthetic Version 3 stories and checks interpreter
+boundaries, including dynamic/static memory writes, all legal property lengths,
+malformed and empty dictionaries, conditional branch fallthrough, invalid
+arithmetic, and nested memory output streams. CI does not depend on local story
+files.
+
 ## Command-line runner
 
 Run a local Version 3 story with:

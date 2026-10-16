@@ -164,6 +164,27 @@ public sealed class Z3OpcodeExecutorTests
     }
 
     [Fact]
+    public async Task DoesNotTakeAConditionalBranchWhenItsComparisonIsFalse()
+    {
+        // jl 1 0 is false; the instruction continues immediately after its branch byte.
+        Z3ExecutionState state = CreateState([0xC2, 0x5F, 1, 0, 0xC3, 0xBA, 0xBA]);
+
+        await new Z3OpcodeExecutor(state, new TestInterpreterIO()).ExecuteNextAsync();
+
+        Assert.Equal(CodeAddress + 5, state.ProgramCounter);
+    }
+
+    [Fact]
+    public async Task DivisionByZeroFailsAtTheOpcode()
+    {
+        // div 6 0 -> global 16
+        Z3ExecutionState state = CreateState([0x17, 6, 0, 16]);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await new Z3OpcodeExecutor(state, new TestInterpreterIO()).ExecuteNextAsync());
+    }
+
+    [Fact]
     public async Task JeComparesEveryEncodedOperandInVariableForm()
     {
         // je 1 2 3 4 branches when it matches the fourth operand.
@@ -510,6 +531,48 @@ public sealed class Z3OpcodeExecutorTests
         Assert.Equal((byte)'A', state.Memory.ReadByte(0x0402));
         Assert.Equal((byte)13, state.Memory.ReadByte(0x0403));
         Assert.Empty(io.WrittenText);
+    }
+
+    [Fact]
+    public async Task OutputStreamThreeAllowsSixteenNestedTables()
+    {
+        List<byte> code = [];
+        for (int index = 0; index < 16; index++)
+        {
+            int tableAddress = 0x0400 + (index * 4);
+            code.AddRange([0xF3, 0x4F, 3, (byte)(tableAddress >> 8), (byte)tableAddress]);
+        }
+
+        for (int index = 0; index < 16; index++)
+        {
+            code.AddRange([0xF3, 0x3F, 0xFF, 0xFD]);
+        }
+
+        code.Add(0xBA);
+        Z3ExecutionState state = CreateState(code.ToArray());
+
+        await new Z3OpcodeExecutor(state, new TestInterpreterIO()).RunAsync();
+
+        for (int index = 0; index < 16; index++)
+        {
+            Assert.Equal((ushort)0, state.Memory.ReadWord(0x0400 + (index * 4)));
+        }
+    }
+
+    [Fact]
+    public async Task OutputStreamThreeRejectsASeventeenthNestedTable()
+    {
+        List<byte> code = [];
+        for (int index = 0; index < 17; index++)
+        {
+            int tableAddress = 0x0400 + (index * 4);
+            code.AddRange([0xF3, 0x4F, 3, (byte)(tableAddress >> 8), (byte)tableAddress]);
+        }
+
+        Z3ExecutionState state = CreateState(code.ToArray());
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await new Z3OpcodeExecutor(state, new TestInterpreterIO()).RunAsync());
     }
 
     [Fact]

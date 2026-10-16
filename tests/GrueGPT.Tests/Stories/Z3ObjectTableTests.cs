@@ -70,6 +70,29 @@ public sealed class Z3ObjectTableTests
         Assert.Equal(0xCD, objects.GetProperty(1, 2));
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    [InlineData(6)]
+    [InlineData(7)]
+    [InlineData(8)]
+    public void ReadsEveryVersion3PropertyLengthFromItsHeader(int length)
+    {
+        byte propertyHeader = (byte)(((length - 1) << 5) | 1);
+        SyntheticStoryBuilder story = new SyntheticStoryBuilder()
+            .WriteWord(ObjectAddress(1) + 7, 0x0400)
+            .WriteByte(0x0400, 0)
+            .WriteByte(0x0401, propertyHeader)
+            .WriteBytes(0x0402, Enumerable.Repeat((byte)0xA5, length).ToArray())
+            .WriteByte(0x0402 + length, 0);
+        Z3ObjectTable objects = CreateObjectTable(story);
+
+        Assert.Equal((byte)length, objects.GetPropertyLength(0x0402));
+    }
+
     [Fact]
     public void RejectsMissingPropertiesAndUnsupportedValueLengths()
     {

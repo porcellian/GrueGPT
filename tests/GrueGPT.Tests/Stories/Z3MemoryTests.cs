@@ -37,6 +37,21 @@ public sealed class Z3MemoryTests
     }
 
     [Fact]
+    public void RejectsAWordWriteCrossingIntoStaticMemoryWithoutChangingDynamicMemory()
+    {
+        Z3Memory memory = new(Load(new SyntheticStoryBuilder()
+            .WithStaticMemoryBase(0x1000)
+            .WriteByte(0x0FFF, 0x5A)
+            .WriteByte(0x1000, 0xA5)
+            .Build()));
+
+        Assert.Throws<InvalidOperationException>(() => memory.WriteWord(0x0FFF, 0x1234));
+
+        Assert.Equal((byte)0x5A, memory.ReadByte(0x0FFF));
+        Assert.Equal((byte)0xA5, memory.ReadByte(0x1000));
+    }
+
+    [Fact]
     public void ReadsPackedMemoryBeyond64KiBInLongVersion3Stories()
     {
         const int address = 0x10000;
