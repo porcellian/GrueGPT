@@ -21,6 +21,7 @@ public sealed class Z3OpcodeExecutor
     private bool _recordCommands;
     private byte _inputStream;
     private bool _halted;
+    private int? _activeReadInstructionAddress;
 
     public Z3OpcodeExecutor(
         Z3ExecutionState state,
@@ -61,7 +62,7 @@ public sealed class Z3OpcodeExecutor
     /// <summary>The character-cell screen state exposed for hosts and tests.</summary>
     public Z3ScreenSnapshot Screen => _screen.CreateSnapshot();
 
-    /// <summary>Saves the current state for a host menu action. Call between instruction executions.</summary>
+    /// <summary>Saves the current state for a host menu action. A save requested at a command prompt repeats its pending read.</summary>
     public async ValueTask<bool> SaveFromHostAsync(CancellationToken cancellationToken = default)
     {
         if (_saveRestoreIO is null)
@@ -69,7 +70,7 @@ public sealed class Z3OpcodeExecutor
             return false;
         }
 
-        byte[] saveFile = Z3SaveRestoreService.CreateHostSaveFile(_state);
+        byte[] saveFile = Z3SaveRestoreService.CreateHostSaveFile(_state, _activeReadInstructionAddress);
         return await _saveRestoreIO.SaveGameAsync(saveFile, cancellationToken).ConfigureAwait(false);
     }
 
@@ -625,13 +626,23 @@ public sealed class Z3OpcodeExecutor
         }
 
         ValidateInputBuffer(parseBufferAddress, 2 + (maximumWords * 4), "parse");
-        await UpdateStatusAsync(cancellationToken).ConfigureAwait(false);
-        _screen.BeginInput();
-        await PresentScreenAsync(cancellationToken).ConfigureAwait(false);
+        _activeReadInstructionAddress = instruction.Address;
+        string? inputLine;
+        try
+        {
+            await UpdateStatusAsync(cancellationToken).ConfigureAwait(false);
+            _screen.BeginInput();
+            await PresentScreenAsync(cancellationToken).ConfigureAwait(false);
 
-        string? inputLine = _inputStream == 0
-            ? await _io.ReadLineAsync(cancellationToken).ConfigureAwait(false)
-            : await GetStreamIO().ReadPlaybackCommandAsync(cancellationToken).ConfigureAwait(false);
+            inputLine = _inputStream == 0
+                ? await _io.ReadLineAsync(cancellationToken).ConfigureAwait(false)
+                : await GetStreamIO().ReadPlaybackCommandAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _activeReadInstructionAddress = null;
+        }
+
         if (inputLine is null)
         {
             _screen.EndInput();

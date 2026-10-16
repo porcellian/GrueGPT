@@ -121,6 +121,37 @@ public sealed class Z3OpcodeExecutorTests
     }
 
     [Fact]
+    public async Task HostSaveWhileWaitingForCommandResumesAtTheReadInstruction()
+    {
+        TaskCompletionSource<string?> input = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> inputStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TestInterpreterIO io = new() { PendingInput = input, InputReadStarted = inputStarted };
+        Z3ExecutionState state = CreateState(new SyntheticStoryBuilder()
+            .WriteBytes(CodeAddress, [0xE4, 0x5F, 0x80, 0xA0])
+            .WriteByte(0x80, 20)
+            .WriteByte(0xA0, 4));
+        Z3OpcodeExecutor executor = new(state, io);
+        Task<bool> execution = executor.ExecuteNextAsync().AsTask();
+
+        try
+        {
+            await inputStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        catch (TimeoutException)
+        {
+            await execution;
+            throw;
+        }
+        Assert.True(await executor.SaveFromHostAsync());
+        QuetzalIfhd savedIdentity = QuetzalIfhd.Read(
+            Assert.Single(QuetzalFileCodec.Read(Assert.Single(io.SavedGames)).Chunks, static chunk => chunk.Id == "IFhd"));
+        input.SetResult(null);
+        await execution;
+
+        Assert.Equal((uint)CodeAddress, savedIdentity.ProgramCounter);
+    }
+
+    [Fact]
     public async Task ExecutesSignedComparisonAndBranchesToReturn()
     {
         // jl -1 1 branches by three bytes to a following quit instruction.
@@ -614,6 +645,10 @@ public sealed class Z3OpcodeExecutorTests
 
         public bool SaveResult { get; set; } = true;
 
+        public TaskCompletionSource<string?>? PendingInput { get; init; }
+
+        public TaskCompletionSource<bool>? InputReadStarted { get; init; }
+
         public ValueTask WriteTextAsync(string text, CancellationToken cancellationToken = default)
         {
             WrittenText.Add(text);
@@ -626,8 +661,13 @@ public sealed class Z3OpcodeExecutorTests
             return ValueTask.CompletedTask;
         }
 
-        public ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken = default) =>
-            ValueTask.FromResult(KeyboardLines.TryDequeue(out string? line) ? line : null);
+        public ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken = default)
+        {
+            InputReadStarted?.TrySetResult(true);
+            return PendingInput is null
+                ? ValueTask.FromResult(KeyboardLines.TryDequeue(out string? line) ? line : null)
+                : new ValueTask<string?>(PendingInput.Task);
+        }
 
         public ValueTask ReportErrorAsync(string message, CancellationToken cancellationToken = default)
         {

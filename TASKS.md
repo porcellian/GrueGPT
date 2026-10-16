@@ -31,7 +31,7 @@ Each checkbox is a separate task and pull request. The explicit `Task N` labels 
 ## Desktop and CLI front ends
 
 - [x] **Task 18:** Build the Avalonia GUI for macOS and Windows, matching the reference colors, Courier-style text, status strip, input prompt, and scrolling transcript.
-- [ ] **Task 19:** Add story selection, keyboard command entry, save/load dialogs, and actionable error messages to the desktop app.
+- [x] **Task 19:** Add story selection, keyboard command entry, save/load dialogs, and actionable error messages to the desktop app.
 - [ ] **Task 20:** Implement CLI story loading, command input, text output, and save/restore using the shared interpreter core.
 
 ## Z3 verification and release readiness

@@ -58,6 +58,7 @@
 - 2026-10-16T15:23Z [TOOL] Instruction forms are distinguished by the top two bits: `$00–$7F` long, `$80–$BF` short, and `$C0–$FF` variable. Variable zero pops for value reads and pushes for result stores; indirect operations inspect or replace the existing stack top.
 - 2026-10-16T18:15Z [CODE] IFF identifiers must be validated from raw bytes before ASCII decoding; .NET ASCII replacement fallback can turn non-ASCII bytes into printable `?`. IFZS framing uses exact FORM bounds, big-endian chunk lengths, and required zero padding for odd data.
 - 2026-10-16T18:24Z [CODE] CMem stores XOR differences; a zero run encodes 1–256 unchanged bytes. Decoding may stop early and fills the remaining tail from original memory, but rejects incomplete runs and any output beyond dynamic memory. UMem requires exact length.
+- 2026-10-16T19:58Z [CODE] A host save requested while the Z3 executor is awaiting a command must record the current `read` instruction address as its direct-resume PC; otherwise restore skips reading the next command.
 
 ## [OUTCOMES]
 - 2026-10-16T16:24Z [CODE] Task 11 adds `Z3OpcodeExecutor` and Version 3 random handling for legal opcode families, status/time mode, and checksum verification; task 12's checklist no longer includes quit/verify.
@@ -102,3 +103,9 @@
 - 2026-10-16T19:18Z [CODE] Task 18 replaces the desktop placeholder with an Avalonia renderer for Z3 screen snapshots, reference colors, status row, responsive Courier text, bottom-left prompt, window content, and UI-thread-safe updates; story selection and keyboard input remain Task 19.
 - 2026-10-16T19:18Z [TOOL] Task 18 Release build succeeded with 0 warnings/errors; xUnit passed 207 tests; formatting verification and `git diff --check` passed.
 - 2026-10-16T19:20Z [TOOL] GitHub API commit `5bdbd6a` has the same Task 18 tree as local commit `a5202e1`; PR #19 is open at `https://github.com/porcellian/GrueGPT/pull/19` for manual merge. Git push remains unavailable because the Apple HTTPS helper crashes.
+- 2026-10-16T19:58Z [USER] User confirmed PR #19 merged; GitHub main is merge commit `5970bca`, whose tree matches local Task 18. Task 19 started on `feature/19-desktop-interaction`.
+- 2026-10-16T19:58Z [CODE] Task 19 connects Avalonia file pickers, v3 story loading, keyboard line input, host Quetzal save/load, transactional save replacement, and dismissible runtime/load errors. Host saves taken during input resume by repeating the pending `read` instruction.
+- 2026-10-16T19:58Z [TOOL] Task 19 Release build succeeded with 0 warnings/errors; xUnit passed 208 tests; formatting verification passed.
+- 2026-10-16T20:02Z [TOOL] Task 19 local commit `434e9b8` was pushed on `feature/19-desktop-interaction`; PR #20 is open at `https://github.com/porcellian/GrueGPT/pull/20` for manual merge.
+- 2026-10-16T20:22Z [TOOL] PR #20 macOS format follow-up fully qualifies `AvaloniaXamlLoader` in `MainWindow.axaml.cs` to avoid IDE0005 on its using directive; formatter verification passed, Release build passed with 0 warnings/errors, all 208 xUnit tests passed, and `git diff --check` passed. Fix commit and PR update pending.
+- 2026-10-16T20:24Z [TOOL] Supersedes the pending publication status above: fix commit `d56713b` was pushed to PR #20 as head `e39f50f` after reconciling a remote merge update while preserving the Task 19 tree; PR #20 remains open and macOS/Windows CI are pending.

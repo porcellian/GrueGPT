@@ -33,11 +33,19 @@ public static class Z3SaveRestoreService
         return CreateSaveFile(state, saveBranchAddress, includeHostResumeMarker: false);
     }
 
-    /// <summary>Creates a host-initiated save that resumes directly at the current instruction address.</summary>
-    public static byte[] CreateHostSaveFile(Z3ExecutionState state)
+    /// <summary>Creates a host-initiated save that resumes directly at the supplied address or current program counter.</summary>
+    /// <param name="state">The state to serialize.</param>
+    /// <param name="resumeProgramCounter">An optional instruction address to repeat after restore.</param>
+    public static byte[] CreateHostSaveFile(Z3ExecutionState state, int? resumeProgramCounter = null)
     {
         ArgumentNullException.ThrowIfNull(state);
-        return CreateSaveFile(state, state.ProgramCounter, includeHostResumeMarker: true);
+        int programCounter = resumeProgramCounter ?? state.ProgramCounter;
+        if (programCounter < 0 || programCounter >= state.Memory.Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(resumeProgramCounter), "The resume address must point inside the story image.");
+        }
+
+        return CreateSaveFile(state, programCounter, includeHostResumeMarker: true);
     }
 
     /// <summary>
