@@ -89,3 +89,6 @@
 - 2026-10-16T18:15Z [TOOL] Task 14 Release build passed with 0 warnings/errors; xUnit passed 158 tests; format verification and `git diff --check` passed.
 - 2026-10-16T18:24Z [CODE] Task 15 adds IFhd read/write with forward-compatible extension retention, CMem XOR/run-length encode/decode, and exact-length UMem read/write. README and checklist updated; Z3 SAVE/RESTORE integration remains Task 17.
 - 2026-10-16T18:24Z [TOOL] Task 15 Release build passed with 0 warnings/errors; xUnit passed 181 tests; format verification and `git diff --check` passed.
+- 2026-10-16T18:32Z [USER] User confirmed PR #16 merged; GitHub main is merge commit `4369775`, with tree matching local Task 15. Task 16 started on `feature/16-quetzal-stks`.
+- 2026-10-16T18:38Z [CODE] Task 16 adds Quetzal `Stks` frame state and codec, including dummy frame, 24-bit return PCs, flags, argument masks, locals, per-frame stacks, and execution-state snapshot/restore. README and checklist updated; opcode/UI save integration remains Task 17.
+- 2026-10-16T18:39Z [TOOL] Task 16 Release build succeeded with 0 warnings/errors; xUnit passed 194 tests; formatting verification and `git diff --check` passed.
