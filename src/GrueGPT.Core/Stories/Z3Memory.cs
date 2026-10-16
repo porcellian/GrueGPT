@@ -14,11 +14,13 @@ public sealed class Z3Memory
     private const byte Flags2InterpreterMutableMask = 0x00;
 
     private readonly byte[] _bytes;
+    private readonly byte[] _originalBytes;
 
     public Z3Memory(LoadedStory story)
     {
         ArgumentNullException.ThrowIfNull(story);
-        _bytes = story.Image.ToArray();
+        _originalBytes = story.Image.ToArray();
+        _bytes = (byte[])_originalBytes.Clone();
         StaticMemoryBase = story.Header.StaticMemoryBase;
         HighMemoryBase = story.Header.HighMemoryBase;
     }
@@ -35,6 +37,13 @@ public sealed class Z3Memory
     {
         ValidateByteAddress(address);
         return _bytes[address];
+    }
+
+    /// <summary>Reads an immutable byte from the loaded story image.</summary>
+    public byte ReadOriginalByte(int address)
+    {
+        ValidateByteAddress(address);
+        return _originalBytes[address];
     }
 
     public ushort ReadWord(int address)

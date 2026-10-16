@@ -53,6 +53,28 @@ public sealed class Z3ObjectTable
 
     public byte GetChild(byte objectNumber) => _memory.ReadByte(GetObjectEntryAddress(objectNumber) + 6);
 
+    /// <summary>Decodes an object's short name from the start of its property table.</summary>
+    public string GetShortName(byte objectNumber, Z3TextDecoder textDecoder)
+    {
+        ArgumentNullException.ThrowIfNull(textDecoder);
+        int entryAddress = GetObjectEntryAddress(objectNumber);
+        int propertyTableAddress = _memory.ReadWord(entryAddress + 7);
+        ValidateDynamicAddress(propertyTableAddress, "object property table");
+        byte nameWordCount = _memory.ReadByte(propertyTableAddress);
+        if (nameWordCount == 0)
+        {
+            return string.Empty;
+        }
+
+        int nameEndAddress = propertyTableAddress + 1 + (nameWordCount * sizeof(ushort));
+        if (nameEndAddress > _memory.StaticMemoryBase)
+        {
+            throw new InvalidOperationException($"Object {objectNumber}'s short name extends beyond dynamic memory.");
+        }
+
+        return textDecoder.DecodeAt(propertyTableAddress + 1);
+    }
+
     /// <summary>Reads a property's default value from the story's 31-word defaults table.</summary>
     public ushort GetPropertyDefault(byte propertyNumber)
     {

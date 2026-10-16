@@ -1,0 +1,600 @@
+using System.Globalization;
+using GrueGPT.Core.Runtime;
+
+namespace GrueGPT.Core.Stories;
+
+/// <summary>Executes Version 3 instructions using the shared story state and host I/O.</summary>
+public sealed class Z3OpcodeExecutor
+{
+    private readonly Z3ExecutionState _state;
+    private readonly Z3InstructionDecoder _decoder;
+    private readonly Z3ObjectTable _objects;
+    private readonly Z3TextDecoder _textDecoder;
+    private readonly IInterpreterIO _io;
+    private readonly Z3RandomNumberGenerator _random;
+    private bool _halted;
+
+    public Z3OpcodeExecutor(
+        Z3ExecutionState state,
+        IInterpreterIO io,
+        Z3RandomNumberGenerator? randomNumberGenerator = null)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(io);
+        _state = state;
+        _io = io;
+        _decoder = new Z3InstructionDecoder(state);
+        _objects = new Z3ObjectTable(state.Memory, state.Header.ObjectTableAddress);
+        _textDecoder = new Z3TextDecoder(state.Memory, state.Header.AbbreviationsAddress);
+        _random = randomNumberGenerator ?? new Z3RandomNumberGenerator();
+    }
+
+    public bool IsHalted => _halted;
+
+    /// <summary>The current Version 3 output window selected by set_window.</summary>
+    public byte CurrentWindow { get; private set; }
+
+    /// <summary>The current upper-window height selected by split_window.</summary>
+    public ushort UpperWindowHeight { get; private set; }
+
+    /// <summary>Decodes and executes one instruction; returns false after quit.</summary>
+    public async ValueTask<bool> ExecuteNextAsync(CancellationToken cancellationToken = default)
+    {
+        if (_halted)
+        {
+            return false;
+        }
+
+        Z3DecodedInstruction instruction = _decoder.DecodeNext(evaluateVariableOperands: false);
+        await ExecuteInstructionAsync(instruction, cancellationToken).ConfigureAwait(false);
+        return !_halted;
+    }
+
+    /// <summary>Executes instructions until quit or an opcode owned by a later task is reached.</summary>
+    public async ValueTask RunAsync(CancellationToken cancellationToken = default)
+    {
+        while (await ExecuteNextAsync(cancellationToken).ConfigureAwait(false))
+        {
+        }
+    }
+
+    private async ValueTask ExecuteInstructionAsync(Z3DecodedInstruction instruction, CancellationToken cancellationToken)
+    {
+        switch (instruction.OperandCount)
+        {
+            case Z3OperandCount.Zero:
+                await ExecuteZeroOperandAsync(instruction, cancellationToken).ConfigureAwait(false);
+                break;
+            case Z3OperandCount.One:
+                await ExecuteOneOperandAsync(instruction, cancellationToken).ConfigureAwait(false);
+                break;
+            case Z3OperandCount.Two:
+                await ExecuteTwoOperandAsync(instruction).ConfigureAwait(false);
+                break;
+            case Z3OperandCount.Variable:
+                await ExecuteVariableOperandAsync(instruction, cancellationToken).ConfigureAwait(false);
+                break;
+            default:
+                throw new InvalidDataException($"Unsupported operand count {instruction.OperandCount}.");
+        }
+    }
+
+    private async ValueTask ExecuteZeroOperandAsync(Z3DecodedInstruction instruction, CancellationToken cancellationToken)
+    {
+        switch (instruction.OpcodeNumber)
+        {
+            case 0:
+                _state.ReturnFromRoutine(1);
+                break;
+            case 1:
+                _state.ReturnFromRoutine(0);
+                break;
+            case 2:
+                await WriteAsync(DecodeInlineText(instruction), cancellationToken).ConfigureAwait(false);
+                break;
+            case 3:
+                await WriteAsync(DecodeInlineText(instruction), cancellationToken).ConfigureAwait(false);
+                await WriteAsync("\n", cancellationToken).ConfigureAwait(false);
+                _state.ReturnFromRoutine(1);
+                break;
+            case 4:
+                break;
+            case 5:
+                throw DeferredOpcode("save", "task 17");
+            case 6:
+                throw DeferredOpcode("restore", "task 17");
+            case 7:
+                throw DeferredOpcode("restart", "task 12");
+            case 8:
+                _state.ReturnFromRoutine(_state.PopStack());
+                break;
+            case 9:
+                _ = _state.PopStack();
+                break;
+            case 10:
+                _halted = true;
+                break;
+            case 11:
+                await WriteAsync("\n", cancellationToken).ConfigureAwait(false);
+                break;
+            case 12:
+                await UpdateStatusAsync(cancellationToken).ConfigureAwait(false);
+                break;
+            case 13:
+                instruction.Branch?.Apply(_state, VerifyChecksum());
+                break;
+            default:
+                throw UnknownOpcode(instruction);
+        }
+    }
+
+    private async ValueTask ExecuteOneOperandAsync(Z3DecodedInstruction instruction, CancellationToken cancellationToken)
+    {
+        switch (instruction.OpcodeNumber)
+        {
+            case 0:
+                instruction.Branch?.Apply(_state, GetValue(instruction, 0) == 0);
+                break;
+            case 1:
+            case 2:
+                {
+                    byte value = instruction.OpcodeNumber == 1
+                        ? _objects.GetSibling(GetValue(instruction, 0).ToObjectNumber())
+                        : _objects.GetChild(GetValue(instruction, 0).ToObjectNumber());
+                    StoreResult(instruction, value);
+                    instruction.Branch?.Apply(_state, value != 0);
+                    break;
+                }
+            case 3:
+                StoreResult(instruction, _objects.GetParent(GetValue(instruction, 0).ToObjectNumber()));
+                break;
+            case 4:
+                StoreResult(instruction, _objects.GetPropertyLength(GetValue(instruction, 0)));
+                break;
+            case 5:
+            case 6:
+                {
+                    byte variableNumber = GetVariableNumber(instruction, 0);
+                    ushort current = _state.ReadVariableIndirect(variableNumber);
+                    ushort next = unchecked((ushort)(current + (instruction.OpcodeNumber == 5 ? 1 : -1)));
+                    _state.WriteVariableIndirect(variableNumber, next);
+                    break;
+                }
+            case 7:
+                await WriteAsync(_textDecoder.DecodeAt(GetValue(instruction, 0)), cancellationToken).ConfigureAwait(false);
+                break;
+            case 9:
+                _objects.RemoveObject(GetValue(instruction, 0).ToObjectNumber());
+                break;
+            case 10:
+                await WriteAsync(_objects.GetShortName(GetValue(instruction, 0).ToObjectNumber(), _textDecoder), cancellationToken).ConfigureAwait(false);
+                break;
+            case 11:
+                _state.ReturnFromRoutine(GetValue(instruction, 0));
+                break;
+            case 12:
+                _state.Jump(GetValue(instruction, 0));
+                break;
+            case 13:
+                await WriteAsync(_textDecoder.DecodePackedAddress(GetValue(instruction, 0)), cancellationToken).ConfigureAwait(false);
+                break;
+            case 14:
+                StoreResult(instruction, _state.ReadVariableIndirect(GetVariableNumber(instruction, 0)));
+                break;
+            case 15:
+                StoreResult(instruction, (ushort)~GetValue(instruction, 0));
+                break;
+            default:
+                throw UnknownOpcode(instruction);
+        }
+    }
+
+    private ValueTask ExecuteTwoOperandAsync(Z3DecodedInstruction instruction)
+    {
+        switch (instruction.OpcodeNumber)
+        {
+            case 1:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    bool equal = false;
+                    for (int index = 1; index < instruction.Operands.Count; index++)
+                    {
+                        equal |= GetValue(instruction, index) == first;
+                    }
+
+                    instruction.Branch?.Apply(_state, equal);
+                    break;
+                }
+            case 2:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    instruction.Branch?.Apply(_state, AsSigned(first) < AsSigned(second));
+                    break;
+                }
+            case 3:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    instruction.Branch?.Apply(_state, AsSigned(first) > AsSigned(second));
+                    break;
+                }
+            case 4:
+            case 5:
+                {
+                    byte variableNumber = GetVariableNumber(instruction, 0);
+                    ushort comparison = GetValue(instruction, 1);
+                    ushort current = _state.ReadVariableIndirect(variableNumber);
+                    ushort changed = unchecked((ushort)(current + (instruction.OpcodeNumber == 4 ? -1 : 1)));
+                    _state.WriteVariableIndirect(variableNumber, changed);
+                    bool branch = instruction.OpcodeNumber == 4
+                        ? AsSigned(changed) < AsSigned(comparison)
+                        : AsSigned(changed) > AsSigned(comparison);
+                    instruction.Branch?.Apply(_state, branch);
+                    break;
+                }
+            case 6:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    bool isDirectChild = first != 0 && second != 0
+                        && _objects.GetParent(first.ToObjectNumber()) == second.ToObjectNumber();
+                    instruction.Branch?.Apply(_state, isDirectChild);
+                    break;
+                }
+            case 7:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    instruction.Branch?.Apply(_state, (first & second) == second);
+                    break;
+                }
+            case 8:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    StoreResult(instruction, (ushort)(first | second));
+                    break;
+                }
+            case 9:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    StoreResult(instruction, (ushort)(first & second));
+                    break;
+                }
+            case 10:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    bool hasAttribute = _objects.TestAttribute(first.ToObjectNumber(), second.ToAttributeNumber());
+                    instruction.Branch?.Apply(_state, hasAttribute);
+                    break;
+                }
+            case 11:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    _objects.SetAttribute(first.ToObjectNumber(), second.ToAttributeNumber());
+                    break;
+                }
+            case 12:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    _objects.ClearAttribute(first.ToObjectNumber(), second.ToAttributeNumber());
+                    break;
+                }
+            case 13:
+                _state.WriteVariable(GetVariableNumber(instruction, 0), GetValue(instruction, 1));
+                break;
+            case 14:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    _objects.InsertObject(first.ToObjectNumber(), second.ToObjectNumber());
+                    break;
+                }
+            case 15:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    StoreResult(instruction, _state.Memory.ReadWord(checked(first + (2 * (int)second))));
+                    break;
+                }
+            case 16:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    StoreResult(instruction, _state.Memory.ReadByte(checked(first + (int)second)));
+                    break;
+                }
+            case 17:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    StoreResult(instruction, _objects.GetProperty(first.ToObjectNumber(), second.ToPropertyNumber()));
+                    break;
+                }
+            case 18:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    StoreResult(instruction, _objects.GetPropertyAddress(first.ToObjectNumber(), second.ToPropertyNumber()));
+                    break;
+                }
+            case 19:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    StoreResult(instruction, _objects.GetNextProperty(first.ToObjectNumber(), second.ToPropertyNumber(allowZero: true)));
+                    break;
+                }
+            case 20:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    StoreResult(instruction, unchecked((ushort)(first + second)));
+                    break;
+                }
+            case 21:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    StoreResult(instruction, unchecked((ushort)(first - second)));
+                    break;
+                }
+            case 22:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    StoreResult(instruction, unchecked((ushort)(AsSigned(first) * AsSigned(second))));
+                    break;
+                }
+            case 23:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    StoreResult(instruction, Divide(first, second));
+                    break;
+                }
+            case 24:
+                {
+                    ushort first = GetValue(instruction, 0);
+                    ushort second = GetValue(instruction, 1);
+                    StoreResult(instruction, Modulo(first, second));
+                    break;
+                }
+            default:
+                throw UnknownOpcode(instruction);
+        }
+
+        return ValueTask.CompletedTask;
+    }
+
+    private async ValueTask ExecuteVariableOperandAsync(Z3DecodedInstruction instruction, CancellationToken cancellationToken)
+    {
+        switch (instruction.OpcodeNumber)
+        {
+            case 0:
+                {
+                    ushort packedRoutine = GetValue(instruction, 0);
+                    ushort[] arguments = instruction.Operands.Skip(1).Select(GetValue).ToArray();
+                    _state.CallRoutine(packedRoutine, arguments, RequireStoreVariable(instruction));
+                    break;
+                }
+            case 1:
+                {
+                    int address = checked(GetValue(instruction, 0) + (2 * (int)GetValue(instruction, 1)));
+                    _state.Memory.WriteWord(address, GetValue(instruction, 2));
+                    break;
+                }
+            case 2:
+                {
+                    int address = checked(GetValue(instruction, 0) + (int)GetValue(instruction, 1));
+                    _state.Memory.WriteByte(address, (byte)GetValue(instruction, 2));
+                    break;
+                }
+            case 3:
+                _objects.PutProperty(
+                    GetValue(instruction, 0).ToObjectNumber(),
+                    GetValue(instruction, 1).ToPropertyNumber(),
+                    GetValue(instruction, 2));
+                break;
+            case 4:
+                throw DeferredOpcode("read", "task 12");
+            case 5:
+                await WriteAsync(DecodeOutputCharacter(GetValue(instruction, 0)), cancellationToken).ConfigureAwait(false);
+                break;
+            case 6:
+                await WriteAsync(AsSigned(GetValue(instruction, 0)).ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
+                break;
+            case 7:
+                StoreResult(instruction, _random.Next(GetValue(instruction, 0)));
+                break;
+            case 8:
+                _state.PushStack(GetValue(instruction, 0));
+                break;
+            case 9:
+                _state.WriteVariable(GetVariableNumber(instruction, 0), _state.PopStack());
+                break;
+            case 10:
+                UpperWindowHeight = GetValue(instruction, 0);
+                break;
+            case 11:
+                {
+                    ushort window = GetValue(instruction, 0);
+                    if (window > 1)
+                    {
+                        throw new InvalidOperationException("Version 3 supports output windows 0 and 1 only.");
+                    }
+
+                    CurrentWindow = (byte)window;
+                    break;
+                }
+            case 19:
+                throw DeferredOpcode("output_stream", "task 12");
+            case 20:
+                throw DeferredOpcode("input_stream", "task 12");
+            case 21:
+                break;
+            default:
+                throw UnknownOpcode(instruction);
+        }
+
+    }
+
+    private ushort GetValue(Z3DecodedInstruction instruction, int index) => GetValue(instruction.Operands[index]);
+
+    private ushort GetValue(Z3Operand operand)
+    {
+        if (operand.Type != Z3OperandType.Variable)
+        {
+            return operand.Value;
+        }
+
+        byte variableNumber = operand.VariableNumber
+            ?? throw new InvalidDataException("A variable operand has no variable number.");
+        return operand.IsValueEvaluated ? operand.Value : _state.ReadVariableValue(variableNumber);
+    }
+
+    private static byte GetVariableNumber(Z3DecodedInstruction instruction, int index)
+    {
+        Z3Operand operand = instruction.Operands[index];
+        if (operand.Type != Z3OperandType.Variable || operand.VariableNumber is null)
+        {
+            throw new InvalidDataException("An indirect variable operand must be encoded as a variable.");
+        }
+
+        return operand.VariableNumber.Value;
+    }
+
+    private static byte RequireStoreVariable(Z3DecodedInstruction instruction) =>
+        instruction.StoreVariable
+            ?? throw new InvalidDataException("The instruction is missing its required store variable.");
+
+    private void StoreResult(Z3DecodedInstruction instruction, ushort value) =>
+        _state.WriteVariable(RequireStoreVariable(instruction), value);
+
+    private static short AsSigned(ushort value) => unchecked((short)value);
+
+    private static ushort Divide(ushort dividend, ushort divisor)
+    {
+        short signedDivisor = AsSigned(divisor);
+        if (signedDivisor == 0)
+        {
+            throw new InvalidOperationException("The Z-machine divide opcode cannot divide by zero.");
+        }
+
+        int result = AsSigned(dividend) / signedDivisor;
+        return unchecked((ushort)result);
+    }
+
+    private static ushort Modulo(ushort dividend, ushort divisor)
+    {
+        short signedDivisor = AsSigned(divisor);
+        if (signedDivisor == 0)
+        {
+            throw new InvalidOperationException("The Z-machine modulo opcode cannot divide by zero.");
+        }
+
+        int result = AsSigned(dividend) % signedDivisor;
+        return unchecked((ushort)result);
+    }
+
+    private string DecodeInlineText(Z3DecodedInstruction instruction)
+    {
+        int address = instruction.InlineTextAddress
+            ?? throw new InvalidDataException("The print instruction is missing its inline text.");
+        return _textDecoder.DecodeAt(address);
+    }
+
+    private string DecodeOutputCharacter(ushort value)
+    {
+        if (value == 0)
+        {
+            return string.Empty;
+        }
+
+        if (value == 13 || value is >= 32 and <= 126 || value is >= 155 and <= 223)
+        {
+            return Z3TextDecoder.ToUnicodeCharacter(value) is char character
+                ? character.ToString()
+                : string.Empty;
+        }
+
+        throw new InvalidDataException($"ZSCII code {value} is not defined for Version 3 output.");
+    }
+
+    private async ValueTask UpdateStatusAsync(CancellationToken cancellationToken)
+    {
+        ushort objectNumber = _state.Memory.ReadWord(_state.Header.GlobalVariablesAddress);
+        string location = objectNumber == 0
+            ? string.Empty
+            : _objects.GetShortName(objectNumber.ToObjectNumber(), _textDecoder);
+        ushort scoreOrHour = _state.Memory.ReadWord(_state.Header.GlobalVariablesAddress + sizeof(ushort));
+        ushort movesOrMinute = _state.Memory.ReadWord(_state.Header.GlobalVariablesAddress + (2 * sizeof(ushort)));
+        bool isTimeGame = (_state.Memory.ReadByte(Z3Memory.Flags1Address) & 0x02) != 0;
+        await _io.UpdateStatusAsync(
+            new StoryStatus(location, unchecked((short)scoreOrHour), movesOrMinute, isTimeGame),
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private bool VerifyChecksum()
+    {
+        if (!_state.Header.HasChecksum)
+        {
+            return false;
+        }
+
+        uint checksum = 0;
+        for (int address = Z3StoryLoader.HeaderSize; address < _state.Header.FileLength; address++)
+        {
+            checksum += _state.Memory.ReadOriginalByte(address);
+        }
+
+        return unchecked((ushort)checksum) == _state.Header.Checksum;
+    }
+
+    private async ValueTask WriteAsync(string text, CancellationToken cancellationToken) =>
+        await _io.WriteTextAsync(text, cancellationToken).ConfigureAwait(false);
+
+    private static NotSupportedException DeferredOpcode(string name, string task) =>
+        new($"The Z-machine {name} opcode is implemented in {task}.");
+
+    private static InvalidDataException UnknownOpcode(Z3DecodedInstruction instruction) =>
+        new($"Opcode {instruction.Form}:{instruction.OpcodeNumber} is not a legal Version 3 instruction.");
+}
+
+internal static class Z3OperandConversions
+{
+    public static byte ToObjectNumber(this ushort value)
+    {
+        if (value is 0 or > byte.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(value), "A Version 3 object number must be in the range 1 through 255.");
+        }
+
+        return (byte)value;
+    }
+
+    public static byte ToPropertyNumber(this ushort value, bool allowZero = false)
+    {
+        if ((allowZero && value == 0) || value is >= 1 and <= Z3ObjectTable.MaximumPropertyNumber)
+        {
+            return (byte)value;
+        }
+
+        throw new ArgumentOutOfRangeException(nameof(value), "A Version 3 property number must be in the range 1 through 31.");
+    }
+
+    public static byte ToAttributeNumber(this ushort value)
+    {
+        if (value >= Z3ObjectTable.AttributeCount)
+        {
+            throw new ArgumentOutOfRangeException(nameof(value), "A Version 3 attribute number must be in the range 0 through 31.");
+        }
+
+        return (byte)value;
+    }
+}

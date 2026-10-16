@@ -9,6 +9,7 @@ public sealed class Z3ExecutionState
     public Z3ExecutionState(LoadedStory story)
     {
         ArgumentNullException.ThrowIfNull(story);
+        Header = story.Header;
         Memory = new Z3Memory(story);
         _globalVariablesAddress = story.Header.GlobalVariablesAddress;
         ProgramCounter = story.Header.InitialProgramCounter;
@@ -21,6 +22,8 @@ public sealed class Z3ExecutionState
     }
 
     public Z3Memory Memory { get; }
+
+    public StoryHeader Header { get; }
 
     public int ProgramCounter { get; private set; }
 
