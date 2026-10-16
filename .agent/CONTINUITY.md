@@ -37,6 +37,7 @@
 - 2026-10-16T16:45Z [TOOL] Task 12 commit `e76bf65` was pushed; PR #13 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/13`.
 - 2026-10-16T17:39Z [USER] User confirmed PR #13 merged; fetched `origin/main` contains merge commit `4056b5a`, and task 13 is underway on `feature/13-z3-screen-model`.
 - 2026-10-16T17:43Z [TOOL] Task 13 commit `847535e` is local and verified. Push attempts fail because Apple Git's HTTPS helper crashes (`dyld: missing symbol called`); `gh auth status` reports an invalid token and SSH reports `Permission denied (publickey)`. PR #14 is not created; retry after GitHub authentication is restored.
+- 2026-10-16T17:59Z [TOOL] Supersedes the 17:43Z push blocker: host `gh` authentication is valid; Apple Git HTTPS still crashes, so GitHub's Git Data API published the Task 13 tree on `feature/13-z3-screen-model` as commit `5fa90eb`; PR #14 is open at `https://github.com/porcellian/GrueGPT/pull/14` for manual merge. The local and remote trees match; their commit histories differ because the API-created commit has a different parent/metadata layout.
 
 ## [DISCOVERIES]
 - 2026-10-16T16:07Z [CODE] Version 3 dictionaries use 4-byte encoded words padded to six Z-characters; negative entry counts indicate an unsorted user dictionary. Parse entries store dictionary address, token length, and one-based text-buffer position.
