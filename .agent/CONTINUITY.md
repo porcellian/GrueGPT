@@ -9,6 +9,7 @@
 
 ## [PROGRESS]
 - 2026-10-16T20:40Z [TOOL] Task 21 is implemented and verified on `feature/21-z3-conformance-tests`; the generated-story suite passes 229 xUnit tests, Release build has 0 warnings/errors, formatter verification and `git diff --check` pass. Commit and PR publication pending.
+- 2026-10-16T20:41Z [TOOL] Supersedes the pending publication status above: Task 21 commit `3ab3d9e` is pushed and PR #22 is open at `https://github.com/porcellian/GrueGPT/pull/22` for manual merge.
 - 2026-10-16T04:01Z [TOOL] Task 1 commit `e9091cb` was pushed on `feature/1-project-foundation`; user confirmed PR #1 merged and fetched `origin/main` contains merge commit `cde737f`.
 - 2026-10-16T04:10Z [TOOL] Windows CI's format check found CRLF checkout line endings in C# files; added `.gitattributes` with `*.cs text eol=lf` and reverified locally.
 - 2026-10-16T04:32Z [TOOL] Task 2 commit `45ec8f2` was pushed on `feature/2-project-license`; PR #2 was opened at `https://github.com/porcellian/GrueGPT/pull/2` and user later confirmed it merged.
