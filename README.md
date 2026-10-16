@@ -76,7 +76,11 @@ operations, packed text and character/number output, random numbers, memory
 reads and writes, stack operations, status updates, verification, line input,
 restart, and output stream management. It tracks the two Version 3 output
 windows and accepts sound-effect instructions without requiring a sound device.
-Quetzal save/restore remain part of the later save-file tasks.
+`QuetzalFileCodec` reads and writes the IFF `FORM/IFZS` container used by
+Quetzal. It validates big-endian form and chunk lengths, printable identifiers,
+chunk bounds, and zero padding for odd-length chunks. Chunk order, duplicates,
+and unknown chunk data are preserved; story identity, memory compression, and
+stack-state chunks are handled by the following save-file tasks.
 
 `Z3ScreenModel` provides the Version 3 status row and separate upper and lower
 windows. It wraps fixed-width text, scrolls the lower window upward, clears and
