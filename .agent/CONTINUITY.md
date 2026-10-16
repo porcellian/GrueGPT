@@ -8,6 +8,10 @@
 - 2026-10-16T03:49Z [CODE] Use .NET 10, Avalonia, a shared interpreter core, CLI, and xUnit.
 
 ## [PROGRESS]
+- 2026-10-16T21:07Z [USER] User confirmed PR #25 merged; fetched `origin/main` contains merge commit `d6b663c`. Task 25 started on `feature/25-blorb-parser`.
+- 2026-10-16T21:09Z [CODE] Added a standalone IFRS parser with validated FORM/chunk bounds and padding, leading/single RIdx enforcement, resource-offset resolution, Exec numbering/count checks, and ZCOD extraction. Added generated parser tests and documented that front-end loading remains raw-story-only; verification and PR pending.
+- 2026-10-16T21:11Z [TOOL] Task 25 review and verification passed: format check, Release build with 0 warnings/errors, all 261 xUnit tests, and `git diff --check`. Commit and PR publication pending.
+- 2026-10-16T21:11Z [TOOL] Task 25 commit `ed6f11b` is pushed; PR #26 is open at `https://github.com/porcellian/GrueGPT/pull/26` for manual merge.
 - 2026-10-16T21:03Z [USER] User confirmed PR #24 merged; fetched `origin/main` contains merge commit `e9e6f81`. Task 24 started on `feature/24-release-documentation`.
 - 2026-10-16T21:04Z [CODE] README now documents Version 3 support boundaries, front-end limitations, Quetzal handling, local-story policy, and self-contained macOS/Windows publish commands; Task 24 checkbox is complete pending verification and PR.
 - 2026-10-16T21:05Z [TOOL] Task 24 docs review passed; format verification passed, Release build succeeded with 0 warnings/errors, and all 241 xUnit tests passed. Commit and PR publication pending.
