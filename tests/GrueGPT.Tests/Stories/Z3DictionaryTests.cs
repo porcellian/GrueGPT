@@ -45,6 +45,24 @@ public sealed class Z3DictionaryTests
     }
 
     [Fact]
+    public void EmptyDictionaryHasNoMatches()
+    {
+        SyntheticStoryBuilder story = StartDictionary(sorted: true, entryCount: 0);
+        Z3Dictionary dictionary = CreateTable(story);
+
+        Assert.Equal(0, dictionary.EntryCount);
+        Assert.Null(dictionary.FindEntry(Z3Dictionary.EncodeWord("look")));
+    }
+
+    [Fact]
+    public void RejectsTheMostNegativeEntryCountWhenItsTableCannotFit()
+    {
+        SyntheticStoryBuilder story = StartDictionary(sorted: false, entryCount: short.MinValue);
+
+        Assert.Throws<InvalidDataException>(() => CreateTable(story));
+    }
+
+    [Fact]
     public void RejectsUnsortedOrDuplicateEntriesWhenTheHeaderDeclaresSortedOrder()
     {
         SyntheticStoryBuilder builder = StartDictionary(sorted: true, entryCount: 2);

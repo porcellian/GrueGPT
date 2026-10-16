@@ -72,6 +72,15 @@ public sealed class Z3TextDecoderTests
     }
 
     [Fact]
+    public void IgnoresAChangeToAnotherAlphabetWhenTextEnds()
+    {
+        Z3TextDecoder decoder = CreateDecoder(new SyntheticStoryBuilder()
+            .WriteBytes(0x2000, Encode(25, 10, 4)));
+
+        Assert.Equal("te", decoder.DecodeAt(0x2000));
+    }
+
+    [Fact]
     public void RejectsNestedAbbreviationsInsteadOfRecursing()
     {
         SyntheticStoryBuilder builder = new();
