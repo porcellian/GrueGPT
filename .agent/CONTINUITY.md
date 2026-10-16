@@ -9,9 +9,11 @@
 
 ## [PROGRESS]
 - 2026-10-16T04:01Z [TOOL] Task 1 commit `e9091cb` is pushed on `feature/1-project-foundation`; PR #1 is open for manual review and merge.
+- 2026-10-16T04:10Z [TOOL] Windows CI's format check found CRLF checkout line endings in C# files; added `.gitattributes` with `*.cs text eol=lf` and reverified locally.
 
 ## [DISCOVERIES]
 - 2026-10-16T03:49Z [TOOL] Local .NET SDK is 10.0.400; GitHub CLI is present but its saved GitHub credential is invalid.
 
 ## [OUTCOMES]
 - 2026-10-16T04:03Z [TOOL] Foundation build succeeded with 0 warnings/errors; xUnit passed 1 test; `dotnet format --verify-no-changes` passed. Linux is not in CI.
+- 2026-10-16T04:10Z [TOOL] After the Windows CI fix, formatting passed, Release build had 0 warnings/errors, and xUnit passed 1 test.
