@@ -16,6 +16,7 @@
 - 2026-10-16T05:05Z [TOOL] User confirmed PR #2 merged; fetched `origin/main` is at `ce2f0d0` and task 3 is underway on `feature/3-synthetic-story-test-utils`.
 - 2026-10-16T05:05Z [TOOL] Task 3 commit `36dca84` was pushed on `feature/3-synthetic-story-test-utils`; user later confirmed PR #3 merged, and fetched `origin/main` contains merge commit `0ce2122`.
 - 2026-10-16T05:20Z [USER] User requested globally visible task IDs in `TASKS.md`; preserve IDs 1–32 and label them explicitly so Markdown section boundaries cannot restart numbering.
+- 2026-10-16T05:20Z [TOOL] Numbering fix commit `71b4ec1` is pushed on `fix/task-number-labels`; PR #4 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/4`.
 
 ## [DISCOVERIES]
 - 2026-10-16T03:49Z [TOOL] Local .NET SDK is 10.0.400.
