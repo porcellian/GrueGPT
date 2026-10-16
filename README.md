@@ -26,6 +26,12 @@ Physical padding past the declared length is excluded from the loaded image.
 Legacy v3 files with omitted length and checksum fields use the physical stream
 length and load without checksum verification.
 
+`Z3Memory` starts from a private copy of the loaded image. It reads bytes and
+big-endian words throughout addressable story memory, permits story writes only
+below the static-memory base, and applies the Version 3 game/interpreter rules
+for the header flags. `PackAddress` and `UnpackAddress` convert Version 3 packed
+addresses using the two-byte scale.
+
 ## Supported platforms
 
 The initial desktop target is macOS and Windows. Linux is not a supported target at this time and is not included in CI.

@@ -21,11 +21,14 @@
 - 2026-10-16T05:35Z [TOOL] Task 4 commit `8a2b92e` was pushed on `feature/4-interpreter-boundaries`; PR #5 was opened at `https://github.com/porcellian/GrueGPT/pull/5` and user later confirmed it merged.
 - 2026-10-16T05:55Z [TOOL] User confirmed PR #5 merged; fetched `origin/main` is at `4ab481c`, and task 5 is underway on `feature/5-z3-story-loader`.
 - 2026-10-16T05:55Z [TOOL] Task 5 commit `783af42` is pushed on `feature/5-z3-story-loader`; PR #6 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/6`.
+- 2026-10-16T14:59Z [USER] User confirmed PR #6 merged; fetched `origin/main` is `f67c686`, and task 6 is underway on `feature/6-memory-map`.
+- 2026-10-16T15:00Z [TOOL] Task 6 commit `cfb8929` is pushed on `feature/6-memory-map`; PR #7 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/7`.
 
 ## [DISCOVERIES]
 - 2026-10-16T03:49Z [TOOL] Local .NET SDK is 10.0.400.
 - 2026-10-16T05:05Z [TOOL] xUnit and Roslyn format checks require elevated execution in this sandbox because their local socket/pipe setup is blocked; both passed when rerun elevated.
 - 2026-10-16T05:55Z [TOOL] Z-Machine Standard 1.1 specifies v3 file-length units of 2 bytes, checksum coverage from byte 0x40 to logical file length, a 128 KiB v1-v3 size limit, and legacy v3 files that may omit length/checksum.
+- 2026-10-16T14:59Z [TOOL] Version 3 packed addresses expand by 2 and may reach 131070 bytes in 128 KiB stories; interpreter reads therefore must reach beyond 64 KiB. Version 3 Flags 1 interpreter-controlled bits are 4–6; Flags 2 game-controlled bits are 0–1, with bit 2 clear-only for game writes.
 
 ## [OUTCOMES]
 - 2026-10-16T04:03Z [TOOL] Foundation build succeeded with 0 warnings/errors; xUnit passed 1 test; `dotnet format --verify-no-changes` passed. Linux is not in CI.
@@ -37,3 +40,5 @@
 - 2026-10-16T05:35Z [TOOL] Task 4 Release build passed with 0 warnings/errors; xUnit passed 8 tests; `dotnet format --verify-no-changes` passed.
 - 2026-10-16T05:55Z [CODE] Task 5 adds `Z3StoryLoader`, parsed header metadata, typed load errors, and tests for malformed inputs, legacy headers, checksum, padding, and header address ranges.
 - 2026-10-16T05:55Z [TOOL] Task 5 Release build passed with 0 warnings/errors; xUnit passed 25 tests; format check passed; the local ignored Zork I file loaded as v3 with logical length 84,876 bytes.
+- 2026-10-16T14:59Z [CODE] Task 6 adds `Z3Memory` with read/write boundaries, endian-aware word access, v3 header flag write rules, and packed address conversion; `README.md` and `TASKS.md` document and mark the task.
+- 2026-10-16T14:59Z [TOOL] Task 6 Release build passed with 0 warnings/errors; xUnit passed 41 tests; `dotnet format --verify-no-changes` and `git diff --check` passed.
