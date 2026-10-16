@@ -2,15 +2,32 @@ namespace GrueGPT.Cli;
 
 internal static class Program
 {
-    private static int Main(string[] args)
+    private static async Task<int> Main(string[] args)
     {
-        if (args.Length == 0)
+        using CancellationTokenSource cancellation = new();
+        ConsoleCancelEventHandler cancelHandler = (_, eventArgs) =>
         {
-            Console.Error.WriteLine("Usage: GrueGPT.Cli <story-file>");
-            return 2;
-        }
+            eventArgs.Cancel = true;
+            cancellation.Cancel();
+        };
+        Console.CancelKeyPress += cancelHandler;
 
-        Console.Error.WriteLine("Story execution is not implemented yet.");
-        return 2;
+        try
+        {
+            return await CliApplication.RunAsync(
+                args,
+                Console.In,
+                Console.Out,
+                Console.Error,
+                cancellation.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            return 130;
+        }
+        finally
+        {
+            Console.CancelKeyPress -= cancelHandler;
+        }
     }
 }
