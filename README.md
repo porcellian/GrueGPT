@@ -161,6 +161,16 @@ Builds, tests, and published output do not need or bundle a story. Obtain a
 story separately and ensure you have the rights needed to use and distribute
 it.
 
+## Blorb parsing
+
+`BlorbFileCodec` parses IFRS containers, validates chunk framing and padding,
+requires one leading resource index, and resolves indexed resource offsets to
+their chunks. `BlorbFile.GetZCodeExecutable()` exposes the bytes of an indexed
+`Exec`/0 `ZCOD` resource. Unknown chunk and usage identifiers are retained for
+forward compatibility. This parser is a Core API; the desktop and CLI still
+load raw story files. Picture, sound, and metadata interpretation is not yet
+connected to the interpreter.
+
 ## Command-line runner
 
 Run a local Version 3 story with:
