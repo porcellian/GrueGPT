@@ -115,7 +115,7 @@ story session.
 
 ## Supported platforms
 
-The desktop target is macOS and Windows. Linux is not supported and is not included in CI. The interpreter currently accepts raw Version 3 story files only. Versions 4–8 and Blorb files are planned for later phases.
+The desktop target is macOS and Windows. Linux is not supported and is not included in CI. The desktop accepts raw Version 3 stories and Z-code Blorb files; the CLI currently accepts raw stories only. Versions 4–8 remain planned for later phases.
 
 ## Build and test
 
@@ -167,12 +167,18 @@ it.
 requires one leading resource index, and resolves indexed resource offsets to
 their chunks. `BlorbFile.GetZCodeExecutable()` exposes the bytes of an indexed
 `Exec`/0 `ZCOD` resource. Unknown chunk and usage identifiers are retained for
-forward compatibility. This parser is a Core API; the desktop and CLI still
-load raw story files. `BlorbFile.Metadata` reads IFmd XML, ASCII author,
+forward compatibility. The desktop can load a Z-code Blorb and use its sample
+resources for Version 3 sound effects. The CLI still loads raw story files.
+`BlorbFile.Metadata` reads IFmd XML, ASCII author,
 copyright and annotation chunks, UTF-8 resource descriptions, frontispiece references,
 palette and resolution hints, game identity, release number, adaptive palette
-picture numbers, and Version 3 sound-loop hints. Picture and sound decoding,
-rendering, and playback are not yet connected to the interpreter.
+picture numbers, and Version 3 sound-loop hints. `BlorbPictureCodec` validates
+PNG, JPEG, and Rect resources and exposes their dimensions; Avalonia decodes PNG
+and JPEG pixels for future graphics rendering. `BlorbAiffCodec` converts
+uncompressed 8/16/24/32-bit integer AIFF PCM samples to 16-bit WAV, which the
+desktop plays through macOS `afplay` or Windows WinMM. Ogg Vorbis, tracker music,
+deprecated SONG files, synthesized bleep tones, and Version 6 picture drawing
+are not implemented.
 
 ## Command-line runner
 

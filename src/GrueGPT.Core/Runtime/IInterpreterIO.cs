@@ -56,3 +56,13 @@ public interface IZ3SaveRestoreIO
     /// <summary>Reads a selected Quetzal file; null means the user cancelled or the read failed.</summary>
     ValueTask<byte[]?> LoadGameAsync(CancellationToken cancellationToken = default);
 }
+
+/// <summary>Optional host capability for Version 3 Blorb sample playback.</summary>
+public interface IZ3SoundIO
+{
+    /// <summary>Starts a decoded PCM wave resource, optionally repeating it until stopped.</summary>
+    ValueTask PlaySoundAsync(uint resourceNumber, ReadOnlyMemory<byte> waveData, bool repeat, CancellationToken cancellationToken = default);
+
+    /// <summary>Stops one sample, or all samples when the resource number is zero.</summary>
+    ValueTask StopSoundAsync(uint resourceNumber, CancellationToken cancellationToken = default);
+}

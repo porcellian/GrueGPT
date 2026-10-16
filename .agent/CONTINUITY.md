@@ -8,6 +8,10 @@
 - 2026-10-16T03:49Z [CODE] Use .NET 10, Avalonia, a shared interpreter core, CLI, and xUnit.
 
 ## [PROGRESS]
+- 2026-10-16T21:23Z [USER] User confirmed PR #27 merged; fetched `origin/main` at merge commit `98d2acf`. Task 27 started on `feature/27-blorb-media`.
+- 2026-10-16T21:30Z [CODE] Task 27 adds Blorb PNG/JPEG/Rect picture validation and Avalonia image decoding, AIFF PCM to WAV conversion, desktop macOS/Windows sample playback, Blorb desktop loading, and Z3 sound-effect resource dispatch. Ogg, tracker music, SONG, and V6 drawing remain unsupported.
+- 2026-10-16T21:30Z [TOOL] Task 27 formatter verification passed, Release build succeeded with 0 warnings/errors, and all 291 xUnit tests passed. Final diff review and PR publication pending.
+- 2026-10-16T21:34Z [TOOL] Task 27 commit `8ec3f54` is pushed on `feature/27-blorb-media`; PR #28 is open at `https://github.com/porcellian/GrueGPT/pull/28` for manual merge.
 - 2026-10-16T21:13Z [USER] User confirmed PR #26 merged; fetched `origin/main` contains merge commit `5e0654f`. Task 26 started on `feature/26-blorb-metadata`.
 - 2026-10-16T21:18Z [CODE] Added parsed Blorb metadata and Z-machine hints: IFmd, AUTH/(c)/ANNO, IFhd, RelN, RDes, Fspc, Plte, Reso, APal, and Loop. Parser validates chunk layouts, text encoding, singleton rules, references, ratio constraints, and Z3 sound repeat flags. Tests and final review pending.
 - 2026-10-16T21:21Z [TOOL] Task 26 formatter verification passed, Release build succeeded with 0 warnings/errors, and all 276 xUnit tests passed. Final diff review and PR publication pending.
@@ -67,6 +71,7 @@
 - 2026-10-16T18:28Z [TOOL] Task 15 local commit `06a90ce` and GitHub API commit `0950e1d` contain the same tree on `feature/15-quetzal-memory-chunks`; PR #16 is open at `https://github.com/porcellian/GrueGPT/pull/16` for manual merge. Apple Git HTTPS remains broken, and local/remote commit histories differ.
 
 ## [DISCOVERIES]
+- 2026-10-16T21:30Z [CODE] Blorb v3 `Loop` metadata controls indefinite playback only when its repeats field is zero. Z3 `sound_effect` actions are prepare=1, start=2, stop=3, finish=4; AIFF sample audio can run on separate host backends without making Core depend on Avalonia.
 - 2026-10-16T20:56Z [CODE] ZSpec 1.1 §4.2.3 says indirect variable-reference operands are usually small constants. Zork's initial code uses this form, so the executor must resolve the literal reference number instead of rejecting it.
 - 2026-10-16T20:45Z [CODE] An empty CMem payload validly restores unchanged original dynamic memory; malformed zero-run coverage must use a lone zero byte. Task 22 also verifies service-level interoperability with independently framed IFZS containing UMem and an odd padded unknown chunk.
 - 2026-10-16T20:39Z [CODE] Existing Z3 suites cover broad memory, text, object/property, dictionary, opcode, input/output, and control-flow behavior; Task 21 adds targeted dynamic/static write atomicity, property lengths 1–8, dictionary edge cases, false-branch fallthrough, divide-by-zero, and stream 3 nesting-depth checks.
@@ -86,6 +91,8 @@
 - 2026-10-16T19:58Z [CODE] A host save requested while the Z3 executor is awaiting a command must record the current `read` instruction address as its direct-resume PC; otherwise restore skips reading the next command.
 
 ## [OUTCOMES]
+- 2026-10-16T21:30Z [CODE] Task 27 implements picture resource inspection for PNG/JPEG/Rect, Avalonia raster decoding, integer PCM AIFF conversion to WAV, and desktop sound-effect playback with prepare/start/stop/finish handling. README and `TASKS.md` updated; music formats and V6 rendering remain deferred.
+- 2026-10-16T21:30Z [TOOL] Task 27 Release build succeeded with 0 warnings/errors; xUnit passed 291 generated-fixture tests; `dotnet format --verify-no-changes` and `git diff --check` passed.
 - 2026-10-16T16:24Z [CODE] Task 11 adds `Z3OpcodeExecutor` and Version 3 random handling for legal opcode families, status/time mode, and checksum verification; task 12's checklist no longer includes quit/verify.
 - 2026-10-16T16:24Z [TOOL] Task 11 Release build succeeded with 0 warnings/errors; xUnit passed 113 tests; `dotnet format --verify-no-changes` and `git diff --check` passed.
 - 2026-10-16T16:43Z [CODE] Task 12 adds Version 3 line input, playback and recording hooks, transcript and output stream routing, restart state reset, and host error reporting; README and checklist updated.

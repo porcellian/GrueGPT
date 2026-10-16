@@ -1,6 +1,8 @@
+using GrueGPT.Core.Resources;
 using GrueGPT.Core.Runtime;
 using GrueGPT.Core.SaveFiles;
 using GrueGPT.Core.Stories;
+using GrueGPT.Tests.Resources;
 using GrueGPT.Tests.TestUtilities;
 using Xunit;
 
@@ -22,6 +24,23 @@ public sealed class Z3OpcodeExecutorTests
 
         Assert.Equal((ushort)12, state.Memory.ReadWord(GlobalVariablesAddress));
         Assert.True(executor.IsHalted);
+    }
+
+    [Fact]
+    public async Task SoundEffectStartDecodesIndexedAiffAndUsesVersion3LoopMetadata()
+    {
+        byte[] aiff = BlorbMediaCodecTests.Aiff(1, 16, [0x12, 0x34]);
+        BlorbFile blorb = BlorbFileCodec.Read(BlorbMediaCodecTests.BuildBlorb("FORM", "Snd ", aiff, repeatSound: true));
+        TestInterpreterIO io = new();
+        Z3ExecutionState state = CreateState([0xF5, 0x55, 1, 2, 0xBA]); // sound_effect 1 2; quit
+        Z3OpcodeExecutor executor = new(state, io, blorb: blorb);
+
+        await executor.ExecuteNextAsync();
+
+        var (number, wave, repeat) = Assert.Single(io.PlayedSounds);
+        Assert.Equal(1u, number);
+        Assert.Equal("RIFF", System.Text.Encoding.ASCII.GetString(wave, 0, 4));
+        Assert.True(repeat);
     }
 
     [Fact]
@@ -695,7 +714,7 @@ public sealed class Z3OpcodeExecutorTests
         return new string(characters);
     }
 
-    private sealed class TestInterpreterIO : IInterpreterIO, IZ3StreamIO, IZ3ScreenIO, IZ3SaveRestoreIO
+    private sealed class TestInterpreterIO : IInterpreterIO, IZ3StreamIO, IZ3ScreenIO, IZ3SaveRestoreIO, IZ3SoundIO
     {
         public List<string> WrittenText { get; } = [];
 
@@ -716,6 +735,8 @@ public sealed class Z3OpcodeExecutorTests
         public Queue<byte[]?> LoadedGames { get; } = new();
 
         public List<byte[]> SavedGames { get; } = [];
+
+        public List<(uint Number, byte[] Wave, bool Repeat)> PlayedSounds { get; } = [];
 
         public bool SaveResult { get; set; } = true;
 
@@ -782,5 +803,13 @@ public sealed class Z3OpcodeExecutorTests
 
         public ValueTask<byte[]?> LoadGameAsync(CancellationToken cancellationToken = default) =>
             ValueTask.FromResult(LoadedGames.TryDequeue(out byte[]? saveFile) ? saveFile : null);
+
+        public ValueTask PlaySoundAsync(uint resourceNumber, ReadOnlyMemory<byte> waveData, bool repeat, CancellationToken cancellationToken = default)
+        {
+            PlayedSounds.Add((resourceNumber, waveData.ToArray(), repeat));
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask StopSoundAsync(uint resourceNumber, CancellationToken cancellationToken = default) => ValueTask.CompletedTask;
     }
 }
