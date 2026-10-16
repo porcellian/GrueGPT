@@ -26,7 +26,7 @@ Each checkbox is a separate task and pull request. The explicit `Task N` labels 
 - [x] **Task 14:** Implement IFF/IFZS parsing and writing with big-endian values, chunk bounds, odd-length padding, and safe handling of unknown chunks.
 - [x] **Task 15:** Implement Quetzal `IFhd`, `CMem`, and `UMem` support, including dynamic-memory compression/decompression and malformed-data checks.
 - [x] **Task 16:** Implement Quetzal `Stks` serialization and restore for Z3 call frames, locals, evaluation stack, and the required dummy frame.
-- [ ] **Task 17:** Integrate save/restore with Z3 SAVE/RESTORE branch semantics and GUI menu actions; reject saves for a mismatched story and preserve the running state on failed restores.
+- [x] **Task 17:** Integrate save/restore with Z3 SAVE/RESTORE branch semantics and host menu actions; reject restores for a mismatched story and preserve the running state on failed restores.
 
 ## Desktop and CLI front ends
 

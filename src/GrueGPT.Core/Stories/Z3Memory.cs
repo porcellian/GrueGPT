@@ -46,6 +46,45 @@ public sealed class Z3Memory
         return _originalBytes[address];
     }
 
+    /// <summary>Copies the original story bytes in dynamic memory.</summary>
+    public byte[] GetOriginalDynamicMemory() => _originalBytes.AsSpan(0, StaticMemoryBase).ToArray();
+
+    /// <summary>Copies the current story bytes in dynamic memory.</summary>
+    public byte[] GetCurrentDynamicMemory() => _bytes.AsSpan(0, StaticMemoryBase).ToArray();
+
+    /// <summary>Copies the six original serial-number bytes from the story header.</summary>
+    public byte[] GetOriginalSerialNumber() => _originalBytes.AsSpan(0x12, 6).ToArray();
+
+    /// <summary>Calculates the story checksum from the original story image.</summary>
+    public ushort CalculateOriginalStoryChecksum()
+    {
+        uint checksum = 0;
+        for (int address = Z3StoryLoader.HeaderSize; address < _originalBytes.Length; address++)
+        {
+            checksum += _originalBytes[address];
+        }
+
+        return unchecked((ushort)checksum);
+    }
+
+    /// <summary>Restores dynamic memory while preserving the current interpreter-controlled header flags.</summary>
+    public void RestoreDynamicMemory(ReadOnlySpan<byte> dynamicMemory)
+    {
+        if (dynamicMemory.Length != StaticMemoryBase)
+        {
+            throw new InvalidDataException(
+                $"Restored dynamic memory contains {dynamicMemory.Length} bytes; expected {StaticMemoryBase}.");
+        }
+
+        byte interpreterFlags1 = (byte)(_bytes[Flags1Address] & Flags1InterpreterMutableMask);
+        byte flags2High = _bytes[Flags2Address];
+        byte flags2Low = _bytes[Flags2Address + 1];
+        dynamicMemory.CopyTo(_bytes);
+        _bytes[Flags1Address] = (byte)((_bytes[Flags1Address] & ~Flags1InterpreterMutableMask) | interpreterFlags1);
+        _bytes[Flags2Address] = flags2High;
+        _bytes[Flags2Address + 1] = flags2Low;
+    }
+
     /// <summary>Restores the original story bytes while retaining transcript and fixed-font flags.</summary>
     public void ResetForRestart()
     {

@@ -1,4 +1,5 @@
 using GrueGPT.Core.Runtime;
+using GrueGPT.Core.SaveFiles;
 using GrueGPT.Core.Stories;
 using GrueGPT.Tests.TestUtilities;
 using Xunit;
@@ -21,6 +22,102 @@ public sealed class Z3OpcodeExecutorTests
 
         Assert.Equal((ushort)12, state.Memory.ReadWord(GlobalVariablesAddress));
         Assert.True(executor.IsHalted);
+    }
+
+    [Fact]
+    public async Task SaveOpcodeWritesQuetzalAndBranchesToSuccess()
+    {
+        TestInterpreterIO io = new();
+        Z3ExecutionState state = CreateState(new SyntheticStoryBuilder()
+            .WriteBytes(CodeAddress, [0xB5, 0xC3, 0xBA])
+            .WriteBytes(0x2010, [0xB6, 0xC3, 0xBA]));
+        Z3OpcodeExecutor executor = new(state, io);
+
+        await executor.ExecuteNextAsync();
+
+        Assert.Equal(CodeAddress + 3, state.ProgramCounter);
+        QuetzalFile saved = QuetzalFileCodec.Read(Assert.Single(io.SavedGames));
+        Assert.Equal((uint)(CodeAddress + 1), QuetzalIfhd.Read(Assert.Single(saved.Chunks, static chunk => chunk.Id == "IFhd")).ProgramCounter);
+    }
+
+    [Fact]
+    public async Task FailedSaveTakesTheFailureBranchAndDoesNotWriteAFile()
+    {
+        TestInterpreterIO io = new() { SaveResult = false };
+        Z3ExecutionState state = CreateState([0xB5, 0xC3, 0xBA]);
+
+        await new Z3OpcodeExecutor(state, io).ExecuteNextAsync();
+
+        Assert.Equal(CodeAddress + 2, state.ProgramCounter);
+        Assert.Empty(io.SavedGames);
+    }
+
+    [Fact]
+    public async Task RestoreOpcodeResumesAtSavedSaveBranchAfterSuccessfulRestore()
+    {
+        TestInterpreterIO io = new();
+        Z3ExecutionState savedState = CreateState(new SyntheticStoryBuilder()
+            .WriteBytes(CodeAddress, [0xB5, 0xC3, 0xBA])
+            .WriteBytes(0x2010, [0xB6, 0xC3, 0xBA]));
+        await new Z3OpcodeExecutor(savedState, io).ExecuteNextAsync();
+        byte[] saveFile = Assert.Single(io.SavedGames);
+
+        Z3ExecutionState restoredState = CreateState(new SyntheticStoryBuilder()
+            .WriteBytes(CodeAddress, [0xB5, 0xC3, 0xBA])
+            .WriteBytes(0x2010, [0xB6, 0xC3, 0xBA]));
+        restoredState.SetProgramCounter(0x2010);
+        io.LoadedGames.Enqueue(saveFile);
+        await new Z3OpcodeExecutor(restoredState, io).ExecuteNextAsync();
+
+        Assert.Equal(CodeAddress + 3, restoredState.ProgramCounter);
+    }
+
+    [Fact]
+    public async Task FailedRestorePreservesMemoryAndTakesRestoreFailureBranch()
+    {
+        TestInterpreterIO io = new();
+        Z3ExecutionState state = CreateState([0xB6, 0xC3, 0xBA]);
+        state.Memory.WriteWord(GlobalVariablesAddress, 0x1234);
+        io.LoadedGames.Enqueue([1, 2, 3]);
+
+        await new Z3OpcodeExecutor(state, io).ExecuteNextAsync();
+
+        Assert.Equal(CodeAddress + 2, state.ProgramCounter);
+        Assert.Equal((ushort)0x1234, state.Memory.ReadWord(GlobalVariablesAddress));
+        Assert.Single(io.Errors);
+    }
+
+    [Fact]
+    public async Task RestoreFailureBranchCanBeEncodedForFalse()
+    {
+        TestInterpreterIO io = new();
+        Z3ExecutionState state = CreateState([0xB6, 0x43, 0xBA]);
+        io.LoadedGames.Enqueue([1, 2, 3]);
+
+        await new Z3OpcodeExecutor(state, io).ExecuteNextAsync();
+
+        Assert.Equal(CodeAddress + 3, state.ProgramCounter);
+    }
+
+    [Fact]
+    public async Task HostMenuActionsSaveAndRestoreAtTheCurrentProgramCounter()
+    {
+        TestInterpreterIO io = new();
+        Z3ExecutionState state = CreateState([0xBA, 0xBA]);
+        state.SetProgramCounter(CodeAddress + 1);
+        state.Memory.WriteWord(GlobalVariablesAddress + 8, 0x1234);
+        Z3OpcodeExecutor executor = new(state, io);
+
+        Assert.True(await executor.SaveFromHostAsync());
+        byte[] saveFile = Assert.Single(io.SavedGames);
+        state.SetProgramCounter(CodeAddress + 2);
+        state.Memory.WriteWord(GlobalVariablesAddress + 8, 0x5678);
+        io.LoadedGames.Enqueue(saveFile);
+
+        Assert.True(await executor.RestoreFromHostAsync());
+
+        Assert.Equal(CodeAddress + 1, state.ProgramCounter);
+        Assert.Equal((ushort)0x1234, state.Memory.ReadWord(GlobalVariablesAddress + 8));
     }
 
     [Fact]
@@ -281,18 +378,6 @@ public sealed class Z3OpcodeExecutorTests
     }
 
     [Fact]
-    public async Task RejectsOpcodesAssignedToLaterTasksWithClearOwnership()
-    {
-        Z3ExecutionState state = CreateState([0xB5]); // save
-        Z3OpcodeExecutor executor = new(state, new TestInterpreterIO());
-
-        NotSupportedException exception = await Assert.ThrowsAsync<NotSupportedException>(
-            async () => await executor.ExecuteNextAsync());
-
-        Assert.Contains("task 17", exception.Message);
-    }
-
-    [Fact]
     public async Task ReadsLowercaseInputIntoTextBufferAndTokenizesIt()
     {
         TestInterpreterIO io = new();
@@ -505,7 +590,7 @@ public sealed class Z3OpcodeExecutorTests
         return new string(characters);
     }
 
-    private sealed class TestInterpreterIO : IInterpreterIO, IZ3StreamIO, IZ3ScreenIO
+    private sealed class TestInterpreterIO : IInterpreterIO, IZ3StreamIO, IZ3ScreenIO, IZ3SaveRestoreIO
     {
         public List<string> WrittenText { get; } = [];
 
@@ -522,6 +607,12 @@ public sealed class Z3OpcodeExecutorTests
         public Queue<string?> KeyboardLines { get; } = new();
 
         public Queue<string?> PlaybackCommands { get; } = new();
+
+        public Queue<byte[]?> LoadedGames { get; } = new();
+
+        public List<byte[]> SavedGames { get; } = [];
+
+        public bool SaveResult { get; set; } = true;
 
         public ValueTask WriteTextAsync(string text, CancellationToken cancellationToken = default)
         {
@@ -564,5 +655,18 @@ public sealed class Z3OpcodeExecutorTests
             RecordedCommands.Add(command);
             return ValueTask.CompletedTask;
         }
+
+        public ValueTask<bool> SaveGameAsync(ReadOnlyMemory<byte> saveFile, CancellationToken cancellationToken = default)
+        {
+            if (SaveResult)
+            {
+                SavedGames.Add(saveFile.ToArray());
+            }
+
+            return ValueTask.FromResult(SaveResult);
+        }
+
+        public ValueTask<byte[]?> LoadGameAsync(CancellationToken cancellationToken = default) =>
+            ValueTask.FromResult(LoadedGames.TryDequeue(out byte[]? saveFile) ? saveFile : null);
     }
 }

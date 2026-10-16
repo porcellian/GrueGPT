@@ -59,15 +59,7 @@ public sealed class Z3ExecutionState
     public void RestoreStackSnapshot(QuetzalStackState snapshot, int programCounter)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-        if (programCounter < 0 || programCounter >= Memory.Length)
-        {
-            throw new ArgumentOutOfRangeException(nameof(programCounter), "The program counter must point inside the story image.");
-        }
-
-        if (snapshot.TopLevelEvaluationStack.Count > ushort.MaxValue)
-        {
-            throw new InvalidDataException("The top-level evaluation stack exceeds the Stks format limit.");
-        }
+        ValidateStackSnapshot(snapshot, programCounter);
 
         List<Z3RoutineFrame> restoredFrames =
         [new Z3RoutineFrame(null, null, null, [], 0)];
@@ -75,17 +67,6 @@ public sealed class Z3ExecutionState
 
         foreach (QuetzalStackFrame frame in snapshot.Frames)
         {
-            if (frame.ReturnProgramCounter < 0 || frame.ReturnProgramCounter >= Memory.Length)
-            {
-                throw new InvalidDataException("A saved frame return address is outside the story image.");
-            }
-
-            if (frame.Locals.Count > 15 || frame.EvaluationStack.Count > ushort.MaxValue || frame.ArgumentMask > 0x7F
-                || (frame.DiscardResult && frame.ResultVariable != 0))
-            {
-                throw new InvalidDataException("A saved frame contains invalid Version 3 frame metadata.");
-            }
-
             Z3RoutineFrame restored = new(
                 null,
                 frame.ReturnProgramCounter,
@@ -100,6 +81,45 @@ public sealed class Z3ExecutionState
         _frames.Clear();
         _frames.AddRange(restoredFrames);
         ProgramCounter = programCounter;
+    }
+
+    /// <summary>Checks that a decoded stack can replace this state's frames without mutation.</summary>
+    public void ValidateStackSnapshot(QuetzalStackState snapshot, int programCounter)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        if (programCounter < 0 || programCounter >= Memory.Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(programCounter), "The program counter must point inside the story image.");
+        }
+
+        if (snapshot.TopLevelEvaluationStack.Count > ushort.MaxValue)
+        {
+            throw new InvalidDataException("The top-level evaluation stack exceeds the Stks format limit.");
+        }
+
+        for (int index = 0; index < snapshot.Frames.Count; index++)
+        {
+            QuetzalStackFrame frame = snapshot.Frames[index];
+            if (frame.ReturnProgramCounter < 0 || frame.ReturnProgramCounter >= Memory.Length)
+            {
+                throw new InvalidDataException("A saved frame return address is outside the story image.");
+            }
+
+            if (frame.Locals.Count > 15 || frame.EvaluationStack.Count > ushort.MaxValue || frame.ArgumentMask > 0x7F
+                || (frame.DiscardResult && frame.ResultVariable != 0))
+            {
+                throw new InvalidDataException("A saved frame contains invalid Version 3 frame metadata.");
+            }
+
+            if (!frame.DiscardResult && frame.ResultVariable is > 0 and <= 15)
+            {
+                int callerLocalCount = index == 0 ? 0 : snapshot.Frames[index - 1].Locals.Count;
+                if (frame.ResultVariable > callerLocalCount)
+                {
+                    throw new InvalidDataException("A saved frame result variable is not present in its caller.");
+                }
+            }
+        }
     }
 
     private static int CountArguments(byte argumentMask)
