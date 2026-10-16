@@ -7,57 +7,31 @@
         MinWidth="800"
         MinHeight="600"
         SizeChanged="OnSizeChanged">
-  <Grid RowDefinitions="Auto,Auto,Auto,*">
+  <Grid RowDefinitions="Auto,Auto,*">
     <Menu Grid.Row="0" Background="#F4F4F4">
       <MenuItem Header="_File">
-        <MenuItem x:Name="OpenStoryMenuItem" Header="Open Story…" Click="OnOpenStoryClick" />
-        <Separator />
-        <MenuItem x:Name="SaveGameMenuItem" Header="Save Game…" Click="OnSaveGameClick" IsEnabled="False" />
-        <MenuItem x:Name="LoadGameMenuItem" Header="Load Game…" Click="OnLoadGameClick" IsEnabled="False" />
+        <MenuItem Header="Open Story…" IsEnabled="False" />
         <Separator />
         <MenuItem Header="Exit" Click="OnExitClick" />
       </MenuItem>
       <MenuItem Header="_Tools" IsEnabled="False" />
       <MenuItem Header="_Help" IsEnabled="False" />
     </Menu>
-    <Border Grid.Row="1" x:Name="ErrorPanel" Background="#FFE8E8" Padding="12,6" IsVisible="False">
-      <Grid ColumnDefinitions="*,Auto">
-        <TextBlock x:Name="ErrorText" Foreground="#8B0000" TextWrapping="Wrap" VerticalAlignment="Center" />
-        <Button Grid.Column="1" Content="Dismiss" Margin="12,0,0,0" Click="OnDismissErrorClick" />
-      </Grid>
-    </Border>
-    <Border Grid.Row="2" Background="#E8E8E8" Padding="12,4">
+    <Border Grid.Row="1" Background="#E8E8E8" Padding="12,4">
       <TextBlock x:Name="StatusText"
                  Foreground="#0066CC"
                  FontFamily="Courier New, Courier"
                  FontSize="20"
                  TextWrapping="NoWrap" />
     </Border>
-    <Border Grid.Row="3" x:Name="PlayArea" Background="#0066CC" Padding="8">
-      <Grid RowDefinitions="*,Auto">
-        <TextBlock x:Name="ScreenText"
-                   Grid.Row="0"
-                   Foreground="White"
-                   FontFamily="Courier New, Courier"
-                   FontSize="28"
-                   LineHeight="32"
-                   TextWrapping="NoWrap"
-                   VerticalAlignment="Stretch" />
-        <Grid x:Name="InputLine" Grid.Row="1" ColumnDefinitions="Auto,*" IsVisible="False">
-          <TextBlock Text=">" Foreground="White" FontFamily="Courier New, Courier" FontSize="28" />
-          <TextBox x:Name="CommandTextBox"
-                   Grid.Column="1"
-                   Background="Transparent"
-                   BorderThickness="0"
-                   Foreground="White"
-                   CaretBrush="White"
-                   FontFamily="Courier New, Courier"
-                   FontSize="28"
-                   Padding="0"
-                   AcceptsReturn="False"
-                   KeyDown="OnCommandKeyDown" />
-        </Grid>
-      </Grid>
+    <Border Grid.Row="2" x:Name="PlayArea" Background="#0066CC" Padding="8">
+      <TextBlock x:Name="ScreenText"
+                 Foreground="White"
+                 FontFamily="Courier New, Courier"
+                 FontSize="28"
+                 LineHeight="32"
+                 TextWrapping="NoWrap"
+                 VerticalAlignment="Stretch" />
     </Border>
   </Grid>
 </Window>
