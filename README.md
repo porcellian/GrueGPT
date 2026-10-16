@@ -44,6 +44,13 @@ updates, property length queries, and object removal/insertion in the object
 tree. Object attributes and property writes use the dynamic-memory rules from
 `Z3Memory`.
 
+`Z3Dictionary` parses Version 3 dictionary headers and validates sorted entry
+order, encodes input words to six Z-characters, and searches sorted or unsorted
+dictionaries. `Z3Tokenizer` reads the Version 3 text-buffer layout, separates
+words and dictionary word separators, and writes bounded parse-buffer entries
+with dictionary addresses, token lengths, and text positions. It also supports
+the tokenise flag that preserves existing entries for unrecognized words.
+
 `Z3InstructionDecoder` reads v3 long, short, and variable instruction forms,
 evaluates variable operands in order, and records store, branch, and inline
 text data while advancing the program counter. `Z3ExecutionState` manages
