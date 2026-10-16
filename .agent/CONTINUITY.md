@@ -40,6 +40,7 @@
 - 2026-10-16T17:59Z [TOOL] Supersedes the 17:43Z push blocker: host `gh` authentication is valid; Apple Git HTTPS still crashes, so GitHub's Git Data API published the Task 13 tree on `feature/13-z3-screen-model` as commit `5fa90eb`; PR #14 is open at `https://github.com/porcellian/GrueGPT/pull/14` for manual merge. The local and remote trees match; their commit histories differ because the API-created commit has a different parent/metadata layout.
 - 2026-10-16T18:05Z [USER] User confirmed PR #14 merged; GitHub main is merge commit `d297646`, whose tree matches the local Task 13 tree. Task 14 started on `feature/14-iff-ifzs-framing`.
 - 2026-10-16T18:15Z [TOOL] Task 14 is implemented and verified locally; commit and PR publication are pending. Apple Git HTTPS helper remains unusable, so use GitHub's Git Data API if it still crashes.
+- 2026-10-16T18:16Z [TOOL] Supersedes the 18:15Z pending status: local commit `d6727a9` and GitHub API commit `0f79978` contain the same Task 14 tree on `feature/14-iff-ifzs-framing`; PR #15 is open at `https://github.com/porcellian/GrueGPT/pull/15` for manual merge. Apple Git HTTPS remains broken, and local/remote commit histories differ.
 
 ## [DISCOVERIES]
 - 2026-10-16T16:07Z [CODE] Version 3 dictionaries use 4-byte encoded words padded to six Z-characters; negative entry counts indicate an unsorted user dictionary. Parse entries store dictionary address, token length, and one-based text-buffer position.
