@@ -13,6 +13,7 @@ public sealed class Z3OpcodeExecutor
     private readonly IInterpreterIO _io;
     private readonly IZ3StreamIO? _streamIO;
     private readonly IZ3ScreenIO? _screenIO;
+    private readonly IZ3SaveRestoreIO? _saveRestoreIO;
     private readonly Z3ScreenModel _screen;
     private readonly Z3RandomNumberGenerator _random;
     private readonly Stack<Z3MemoryOutputFrame> _memoryOutputStreams = new();
@@ -33,6 +34,7 @@ public sealed class Z3OpcodeExecutor
         _io = io;
         _streamIO = io as IZ3StreamIO;
         _screenIO = io as IZ3ScreenIO;
+        _saveRestoreIO = io as IZ3SaveRestoreIO;
         _screen = screenModel ?? new Z3ScreenModel();
         _decoder = new Z3InstructionDecoder(state);
         _objects = new Z3ObjectTable(state.Memory, state.Header.ObjectTableAddress);
@@ -58,6 +60,44 @@ public sealed class Z3OpcodeExecutor
 
     /// <summary>The character-cell screen state exposed for hosts and tests.</summary>
     public Z3ScreenSnapshot Screen => _screen.CreateSnapshot();
+
+    /// <summary>Saves the current state for a host menu action. Call between instruction executions.</summary>
+    public async ValueTask<bool> SaveFromHostAsync(CancellationToken cancellationToken = default)
+    {
+        if (_saveRestoreIO is null)
+        {
+            return false;
+        }
+
+        byte[] saveFile = Z3SaveRestoreService.CreateHostSaveFile(_state);
+        return await _saveRestoreIO.SaveGameAsync(saveFile, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Restores a state selected by a host menu action. Call between instruction executions.</summary>
+    public async ValueTask<bool> RestoreFromHostAsync(CancellationToken cancellationToken = default)
+    {
+        if (_saveRestoreIO is null)
+        {
+            return false;
+        }
+
+        byte[]? saveFile = await _saveRestoreIO.LoadGameAsync(cancellationToken).ConfigureAwait(false);
+        if (saveFile is null)
+        {
+            return false;
+        }
+
+        Z3RestoreResult result = Z3SaveRestoreService.TryRestore(_state, saveFile);
+        if (!result.Succeeded)
+        {
+            await _io.ReportErrorAsync(result.Error!, cancellationToken).ConfigureAwait(false);
+            return false;
+        }
+
+        _halted = false;
+        await UpdateStatusAsync(cancellationToken).ConfigureAwait(false);
+        return true;
+    }
 
     /// <summary>Decodes and executes one instruction; returns false after quit.</summary>
     public async ValueTask<bool> ExecuteNextAsync(CancellationToken cancellationToken = default)
@@ -133,9 +173,11 @@ public sealed class Z3OpcodeExecutor
             case 4:
                 break;
             case 5:
-                throw DeferredOpcode("save", "task 17");
+                await ExecuteSaveInstructionAsync(instruction, cancellationToken).ConfigureAwait(false);
+                break;
             case 6:
-                throw DeferredOpcode("restore", "task 17");
+                await ExecuteRestoreInstructionAsync(instruction, cancellationToken).ConfigureAwait(false);
+                break;
             case 7:
                 await RestartAsync(cancellationToken).ConfigureAwait(false);
                 break;
@@ -760,6 +802,41 @@ public sealed class Z3OpcodeExecutor
         await PresentScreenAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    private async ValueTask ExecuteSaveInstructionAsync(Z3DecodedInstruction instruction, CancellationToken cancellationToken)
+    {
+        bool succeeded = false;
+        if (_saveRestoreIO is not null)
+        {
+            byte[] saveFile = Z3SaveRestoreService.CreateStorySaveFile(_state, instruction.Address + 1);
+            succeeded = await _saveRestoreIO.SaveGameAsync(saveFile, cancellationToken).ConfigureAwait(false);
+        }
+
+        instruction.Branch?.Apply(_state, succeeded);
+    }
+
+    private async ValueTask ExecuteRestoreInstructionAsync(Z3DecodedInstruction instruction, CancellationToken cancellationToken)
+    {
+        byte[]? saveFile = _saveRestoreIO is null
+            ? null
+            : await _saveRestoreIO.LoadGameAsync(cancellationToken).ConfigureAwait(false);
+        if (saveFile is null)
+        {
+            instruction.Branch?.Apply(_state, condition: false);
+            return;
+        }
+
+        Z3RestoreResult result = Z3SaveRestoreService.TryRestore(_state, saveFile);
+        if (!result.Succeeded)
+        {
+            instruction.Branch?.Apply(_state, condition: false);
+            await _io.ReportErrorAsync(result.Error!, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        _halted = false;
+        await UpdateStatusAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     private async ValueTask UpdateStatusAsync(CancellationToken cancellationToken)
     {
         ushort objectNumber = _state.Memory.ReadWord(_state.Header.GlobalVariablesAddress);
@@ -822,9 +899,6 @@ public sealed class Z3OpcodeExecutor
     private ValueTask PresentScreenAsync(CancellationToken cancellationToken) => _screenIO is null
         ? ValueTask.CompletedTask
         : _screenIO.PresentScreenAsync(_screen.CreateSnapshot(), cancellationToken);
-
-    private static NotSupportedException DeferredOpcode(string name, string task) =>
-        new($"The Z-machine {name} opcode is implemented in {task}.");
 
     private static InvalidDataException UnknownOpcode(Z3DecodedInstruction instruction) =>
         new($"Opcode {instruction.Form}:{instruction.OpcodeNumber} is not a legal Version 3 instruction.");
