@@ -10,6 +10,10 @@
 ## [PROGRESS]
 - 2026-10-16T20:40Z [TOOL] Task 21 is implemented and verified on `feature/21-z3-conformance-tests`; the generated-story suite passes 229 xUnit tests, Release build has 0 warnings/errors, formatter verification and `git diff --check` pass. Commit and PR publication pending.
 - 2026-10-16T20:41Z [TOOL] Supersedes the pending publication status above: Task 21 commit `3ab3d9e` is pushed and PR #22 is open at `https://github.com/porcellian/GrueGPT/pull/22` for manual merge.
+- 2026-10-16T20:43Z [USER] User confirmed PR #22 merged; fetched `origin/main` contains merge commit `45e0856`. Task 22 started on `feature/22-quetzal-interoperability-tests`.
+- 2026-10-16T20:45Z [TOOL] Task 22 tests are implemented and pass locally; 240 xUnit tests pass, pending final build/format review and PR publication.
+- 2026-10-16T20:46Z [TOOL] Supersedes the pending verification status above: Task 22 Release build succeeded with 0 warnings/errors, all 240 xUnit tests passed, `dotnet format --verify-no-changes` and `git diff --check` passed. Commit and PR publication pending.
+- 2026-10-16T20:47Z [TOOL] Supersedes the pending publication status above: Task 22 commit `95b7ad5` is pushed and PR #23 is open at `https://github.com/porcellian/GrueGPT/pull/23` for manual merge.
 - 2026-10-16T04:01Z [TOOL] Task 1 commit `e9091cb` was pushed on `feature/1-project-foundation`; user confirmed PR #1 merged and fetched `origin/main` contains merge commit `cde737f`.
 - 2026-10-16T04:10Z [TOOL] Windows CI's format check found CRLF checkout line endings in C# files; added `.gitattributes` with `*.cs text eol=lf` and reverified locally.
 - 2026-10-16T04:32Z [TOOL] Task 2 commit `45ec8f2` was pushed on `feature/2-project-license`; PR #2 was opened at `https://github.com/porcellian/GrueGPT/pull/2` and user later confirmed it merged.
@@ -47,6 +51,7 @@
 - 2026-10-16T18:28Z [TOOL] Task 15 local commit `06a90ce` and GitHub API commit `0950e1d` contain the same tree on `feature/15-quetzal-memory-chunks`; PR #16 is open at `https://github.com/porcellian/GrueGPT/pull/16` for manual merge. Apple Git HTTPS remains broken, and local/remote commit histories differ.
 
 ## [DISCOVERIES]
+- 2026-10-16T20:45Z [CODE] An empty CMem payload validly restores unchanged original dynamic memory; malformed zero-run coverage must use a lone zero byte. Task 22 also verifies service-level interoperability with independently framed IFZS containing UMem and an odd padded unknown chunk.
 - 2026-10-16T20:39Z [CODE] Existing Z3 suites cover broad memory, text, object/property, dictionary, opcode, input/output, and control-flow behavior; Task 21 adds targeted dynamic/static write atomicity, property lengths 1–8, dictionary edge cases, false-branch fallthrough, divide-by-zero, and stream 3 nesting-depth checks.
 - 2026-10-16T16:07Z [CODE] Version 3 dictionaries use 4-byte encoded words padded to six Z-characters; negative entry counts indicate an unsorted user dictionary. Parse entries store dictionary address, token length, and one-based text-buffer position.
 - 2026-10-16T15:47Z [CODE] Version 3 property headers encode lengths 1–8 in their upper three bits and property numbers 1–31 in their lower five; attributes are stored most-significant-bit first. Property lists descend by property number.

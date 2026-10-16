@@ -135,6 +135,11 @@ malformed and empty dictionaries, conditional branch fallthrough, invalid
 arithmetic, and nested memory output streams. CI does not depend on local story
 files.
 
+Quetzal tests cover complete memory and call-stack round trips, compressed and
+uncompressed dynamic memory, malformed or incomplete saves, story identity
+mismatches, SAVE branch resume, and independently framed IFZS files with
+unknown padded chunks. All save fixtures are generated in the test suite.
+
 ## Command-line runner
 
 Run a local Version 3 story with:
