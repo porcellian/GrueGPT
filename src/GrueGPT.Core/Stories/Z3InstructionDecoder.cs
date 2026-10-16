@@ -13,7 +13,7 @@ public sealed class Z3InstructionDecoder
         _memory = state.Memory;
     }
 
-    public Z3DecodedInstruction DecodeNext()
+    public Z3DecodedInstruction DecodeNext(bool evaluateVariableOperands = true)
     {
         int instructionAddress = _state.ProgramCounter;
         int cursor = instructionAddress;
@@ -32,8 +32,8 @@ public sealed class Z3InstructionDecoder
             Z3OperandType secondType = (opcode & 0x20) == 0 ? Z3OperandType.SmallConstant : Z3OperandType.Variable;
             operands =
             [
-                ReadOperand(firstType, ref cursor),
-                ReadOperand(secondType, ref cursor)
+                ReadOperand(firstType, ref cursor, evaluateVariableOperands),
+                ReadOperand(secondType, ref cursor, evaluateVariableOperands)
             ];
         }
         else if ((opcode & 0xC0) == 0x80)
@@ -49,7 +49,7 @@ public sealed class Z3InstructionDecoder
             else
             {
                 operandCount = Z3OperandCount.One;
-                operands = [ReadOperand((Z3OperandType)operandType, ref cursor)];
+                operands = [ReadOperand((Z3OperandType)operandType, ref cursor, evaluateVariableOperands)];
             }
         }
         else
@@ -58,7 +58,7 @@ public sealed class Z3InstructionDecoder
             opcodeNumber = (byte)(opcode & 0x1F);
             operandCount = (opcode & 0x20) == 0 ? Z3OperandCount.Two : Z3OperandCount.Variable;
             byte types = ReadByte(ref cursor);
-            operands = ReadVariableOperands(types, operandCount, ref cursor);
+            operands = ReadVariableOperands(types, operandCount, opcodeNumber, ref cursor, evaluateVariableOperands);
         }
 
         byte? storeVariable = HasStore(operandCount, opcodeNumber) ? ReadByte(ref cursor) : null;
@@ -86,9 +86,14 @@ public sealed class Z3InstructionDecoder
             cursor);
     }
 
-    private List<Z3Operand> ReadVariableOperands(byte typeByte, Z3OperandCount count, ref int cursor)
+    private List<Z3Operand> ReadVariableOperands(
+        byte typeByte,
+        Z3OperandCount count,
+        byte opcodeNumber,
+        ref int cursor,
+        bool evaluateVariableOperands)
     {
-        int fieldsToRead = count == Z3OperandCount.Two ? 2 : 4;
+        int fieldsToRead = count == Z3OperandCount.Two && opcodeNumber != 1 ? 2 : 4;
         List<Z3Operand> operands = new(fieldsToRead);
         bool omitted = false;
 
@@ -106,18 +111,20 @@ public sealed class Z3InstructionDecoder
                 throw new InvalidDataException("An operand type follows an omitted operand or exceeds the instruction's operand count.");
             }
 
-            operands.Add(ReadOperand((Z3OperandType)encodedType, ref cursor));
+            operands.Add(ReadOperand((Z3OperandType)encodedType, ref cursor, evaluateVariableOperands));
         }
 
-        if (count == Z3OperandCount.Two && operands.Count != 2)
+        if (count == Z3OperandCount.Two && (operands.Count < 2 || (opcodeNumber != 1 && operands.Count != 2)))
         {
-            throw new InvalidDataException("A variable-form 2OP instruction must encode exactly two operands.");
+            throw new InvalidDataException(opcodeNumber == 1
+                ? "A variable-form je instruction must encode at least two operands."
+                : "A variable-form 2OP instruction must encode exactly two operands.");
         }
 
         return operands;
     }
 
-    private Z3Operand ReadOperand(Z3OperandType type, ref int cursor)
+    private Z3Operand ReadOperand(Z3OperandType type, ref int cursor, bool evaluateVariableOperand)
     {
         if (type == Z3OperandType.LargeConstant)
         {
@@ -130,6 +137,11 @@ public sealed class Z3InstructionDecoder
         if (type == Z3OperandType.SmallConstant)
         {
             return new Z3Operand(type, encodedValue);
+        }
+
+        if (!evaluateVariableOperand)
+        {
+            return new Z3Operand(type, 0, encodedValue, IsValueEvaluated: false);
         }
 
         ushort variableValue = _state.ReadVariableValue(encodedValue);

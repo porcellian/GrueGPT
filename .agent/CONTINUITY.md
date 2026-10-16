@@ -31,10 +31,12 @@
 - 2026-10-16T15:57Z [TOOL] Task 9 commit `a3bb2f7` was pushed on `feature/9-z3-objects-properties`; PR #10 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/10`.
 - 2026-10-16T16:07Z [USER] User confirmed PR #10 merged; fetched `origin/main` advanced to `02065c8`, and task 10 started on `feature/10-z3-dictionary-input-buffer` (supersedes the PR #10 open status above).
 - 2026-10-16T16:07Z [TOOL] Task 10 commit `10cc308` was pushed on `feature/10-z3-dictionary-input-buffer`; PR #11 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/11`.
+- 2026-10-16T16:24Z [USER] User confirmed PR #11 merged; fetched `origin/main` advanced to `433cf51`, and task 11 started on `feature/11-z3-opcode-dispatch` (supersedes the PR #11 open status above).
 
 ## [DISCOVERIES]
 - 2026-10-16T16:07Z [CODE] Version 3 dictionaries use 4-byte encoded words padded to six Z-characters; negative entry counts indicate an unsorted user dictionary. Parse entries store dictionary address, token length, and one-based text-buffer position.
 - 2026-10-16T15:47Z [CODE] Version 3 property headers encode lengths 1–8 in their upper three bits and property numbers 1–31 in their lower five; attributes are stored most-significant-bit first. Property lists descend by property number.
+- 2026-10-16T16:24Z [CODE] Variable-form `je` supports two through four operands; opcode execution defers variable reads so indirect stack targets are not consumed as values. `verify` checks the immutable loaded image because runtime writes can change dynamic memory.
 - 2026-10-16T03:49Z [TOOL] Local .NET SDK is 10.0.400.
 - 2026-10-16T05:05Z [TOOL] xUnit and Roslyn format checks require elevated execution in this sandbox because their local socket/pipe setup is blocked; both passed when rerun elevated.
 - 2026-10-16T05:55Z [TOOL] Z-Machine Standard 1.1 specifies v3 file-length units of 2 bytes, checksum coverage from byte 0x40 to logical file length, a 128 KiB v1-v3 size limit, and legacy v3 files that may omit length/checksum.
@@ -43,6 +45,8 @@
 - 2026-10-16T15:23Z [TOOL] Instruction forms are distinguished by the top two bits: `$00–$7F` long, `$80–$BF` short, and `$C0–$FF` variable. Variable zero pops for value reads and pushes for result stores; indirect operations inspect or replace the existing stack top.
 
 ## [OUTCOMES]
+- 2026-10-16T16:24Z [CODE] Task 11 adds `Z3OpcodeExecutor` and Version 3 random handling for legal opcode families, status/time mode, and checksum verification; task 12's checklist no longer includes quit/verify.
+- 2026-10-16T16:24Z [TOOL] Task 11 Release build succeeded with 0 warnings/errors; xUnit passed 113 tests; `dotnet format --verify-no-changes` and `git diff --check` passed.
 - 2026-10-16T16:07Z [CODE] Task 10 adds `Z3Dictionary` and `Z3Tokenizer` for Version 3 headers, dictionary ordering/search, six-Z-character case-folded encoding, text-buffer splitting, and bounded parse-buffer updates; README and checklist were updated.
 - 2026-10-16T16:07Z [TOOL] Task 10 Release build succeeded with 0 warnings/errors; xUnit passed 96 tests; `dotnet format --verify-no-changes` and `git diff --check` passed.
 - 2026-10-16T15:47Z [CODE] Task 9 adds `Z3ObjectTable` for object links, attributes, defaults, property lookup/length/value updates, and remove/insert operations; README and checklist were updated.

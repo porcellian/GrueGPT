@@ -23,7 +23,11 @@ public enum Z3OperandCount
 }
 
 /// <summary>An instruction operand after its encoded value has been read.</summary>
-public readonly record struct Z3Operand(Z3OperandType Type, ushort Value, byte? VariableNumber = null);
+public readonly record struct Z3Operand(
+    Z3OperandType Type,
+    ushort Value,
+    byte? VariableNumber = null,
+    bool IsValueEvaluated = true);
 
 /// <summary>Conditional branch data, positioned immediately after its encoded bytes.</summary>
 public readonly record struct Z3Branch(bool BranchOnTrue, int Offset, int AddressAfterBranchData)
