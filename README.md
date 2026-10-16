@@ -17,7 +17,8 @@ GrueGPT is a C# Z-machine interpreter project. Its first playable milestone targ
 The Core project defines `IStorySession` and `IInterpreterIO` so a story session
 can use the same asynchronous line-input, story-text, and status-update contract
 with either the CLI or desktop host. The Core has no console or Avalonia UI
-dependency; each front end owns input editing, rendering, and scrolling.
+dependency; each front end owns input editing and rendering. Hosts that
+implement `IZ3ScreenIO` receive character-cell screen snapshots from the Core.
 
 The Version 3 `read` opcode requests a complete line from the host, updates the
 story's text and parse buffers, and echoes the completed command through the
@@ -76,6 +77,14 @@ reads and writes, stack operations, status updates, verification, line input,
 restart, and output stream management. It tracks the two Version 3 output
 windows and accepts sound-effect instructions without requiring a sound device.
 Quetzal save/restore remain part of the later save-file tasks.
+
+`Z3ScreenModel` provides the Version 3 status row and separate upper and lower
+windows. It wraps fixed-width text, scrolls the lower window upward, clears and
+overlays the upper window, tracks the lower-left input prompt, and formats score
+or time status. Its style metadata follows the supplied reference: blue play
+area, gray status strip, white play text, blue status text, and Courier New.
+The default logical screen is 80 columns by 25 rows; hosts may inject a model
+with dimensions that fit their display.
 
 ## Supported platforms
 
