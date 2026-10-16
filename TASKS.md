@@ -13,7 +13,7 @@ Each checkbox is a separate task and pull request. The explicit `Task N` labels 
 - [x] **Task 4:** Define the interpreter core's story/session and input/output boundaries so the desktop app and CLI use the same engine.
 - [x] **Task 5:** Load raw Z3 story files; validate file size, version, header fields, checksum, and initial execution address with clear errors.
 - [x] **Task 6:** Implement the Z3 memory map, dynamic/static memory rules, byte/word access, packed-address calculations, and header flags.
-- [ ] **Task 7:** Decode Z-machine text, alphabets, abbreviations, ZSCII escapes, and character output according to the Z3 rules.
+- [x] **Task 7:** Decode Z-machine text, alphabets, abbreviations, ZSCII escapes, and character output according to the Z3 rules.
 - [ ] **Task 8:** Implement instruction decoding, operand forms, variable access, stores, branches, jumps, routine calls, returns, and stack frames.
 - [ ] **Task 9:** Implement the Z3 object tree, attributes, property defaults, property lookup/update, and object movement operations.
 - [ ] **Task 10:** Implement the Z3 dictionary format, tokenization, input-buffer layout, and parser-buffer updates.

@@ -32,6 +32,12 @@ below the static-memory base, and applies the Version 3 game/interpreter rules
 for the header flags. `PackAddress` and `UnpackAddress` convert Version 3 packed
 addresses using the two-byte scale.
 
+`Z3TextDecoder` decodes packed Z-characters using the Version 3 default
+alphabets, expands the story's abbreviation table, handles A2 newline and
+ZSCII escape sequences, and maps defined output characters to Unicode. Custom
+alphabet tables and later-version Unicode translation tables are outside the
+Version 3 scope.
+
 ## Supported platforms
 
 The initial desktop target is macOS and Windows. Linux is not a supported target at this time and is not included in CI.
