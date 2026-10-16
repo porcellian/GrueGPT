@@ -104,9 +104,14 @@ or time status. Its style metadata follows the supplied reference: blue play
 area, gray status strip, white play text, blue status text, and Courier New.
 The default logical screen is 80 columns by 25 rows; hosts may inject a model
 with dimensions that fit their display. The Avalonia desktop window renders full
-screen snapshots with a responsive Courier-style size, the status strip, and a
-bottom-left prompt marker. The initial window is a visual shell; story selection,
-interactive command entry, and save-file dialogs are the next desktop task.
+screen snapshots with a responsive Courier-style size, status strip, and
+bottom-left prompt. Open Story uses the native file picker and validates raw v3
+story files before starting the interpreter. Enter submits a command at the
+prompt. Save Game and Load Game use native Quetzal file dialogs; host saves made
+at a command prompt resume by re-running the pending `read` instruction. Failed
+story loads, runtime errors, and invalid saves appear in a dismissible error
+banner. Loading a save validates it in a new state before replacing the active
+story session.
 
 ## Supported platforms
 
