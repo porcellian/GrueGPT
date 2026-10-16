@@ -19,6 +19,13 @@ can use the same asynchronous line-input, story-text, and status-update contract
 with either the CLI or desktop host. The Core has no console or Avalonia UI
 dependency; each front end owns input editing, rendering, and scrolling.
 
+`Z3StoryLoader` reads a raw story from a readable stream, validates its v3
+header, memory ranges, declared length, and available checksum, then returns a
+`LoadedStory` containing the logical story bytes and parsed `StoryHeader`.
+Physical padding past the declared length is excluded from the loaded image.
+Legacy v3 files with omitted length and checksum fields use the physical stream
+length and load without checksum verification.
+
 ## Supported platforms
 
 The initial desktop target is macOS and Windows. Linux is not a supported target at this time and is not included in CI.

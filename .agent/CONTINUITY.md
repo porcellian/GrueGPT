@@ -17,12 +17,14 @@
 - 2026-10-16T05:05Z [TOOL] Task 3 commit `36dca84` was pushed on `feature/3-synthetic-story-test-utils`; user later confirmed PR #3 merged, and fetched `origin/main` contains merge commit `0ce2122`.
 - 2026-10-16T05:20Z [USER] User requested globally visible task IDs in `TASKS.md`; preserve IDs 1–32 and label them explicitly so Markdown section boundaries cannot restart numbering.
 - 2026-10-16T05:20Z [TOOL] Numbering fix commit `71b4ec1` was pushed on `fix/task-number-labels`; PR #4 was opened at `https://github.com/porcellian/GrueGPT/pull/4` and user later confirmed it merged.
-- 2026-10-16T05:35Z [TOOL] User confirmed PR #4 merged; fetched `origin/main` is at `57a7ae1`, and task 4 is underway on `feature/4-interpreter-boundaries`.
-- 2026-10-16T05:35Z [TOOL] Task 4 commit `8a2b92e` is pushed on `feature/4-interpreter-boundaries`; PR #5 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/5`.
+- 2026-10-16T05:35Z [TOOL] User confirmed PR #4 merged; fetched `origin/main` was at `57a7ae1` when task 4 began on `feature/4-interpreter-boundaries`.
+- 2026-10-16T05:35Z [TOOL] Task 4 commit `8a2b92e` was pushed on `feature/4-interpreter-boundaries`; PR #5 was opened at `https://github.com/porcellian/GrueGPT/pull/5` and user later confirmed it merged.
+- 2026-10-16T05:55Z [TOOL] User confirmed PR #5 merged; fetched `origin/main` is at `4ab481c`, and task 5 is underway on `feature/5-z3-story-loader`.
 
 ## [DISCOVERIES]
 - 2026-10-16T03:49Z [TOOL] Local .NET SDK is 10.0.400.
 - 2026-10-16T05:05Z [TOOL] xUnit and Roslyn format checks require elevated execution in this sandbox because their local socket/pipe setup is blocked; both passed when rerun elevated.
+- 2026-10-16T05:55Z [TOOL] Z-Machine Standard 1.1 specifies v3 file-length units of 2 bytes, checksum coverage from byte 0x40 to logical file length, a 128 KiB v1-v3 size limit, and legacy v3 files that may omit length/checksum.
 
 ## [OUTCOMES]
 - 2026-10-16T04:03Z [TOOL] Foundation build succeeded with 0 warnings/errors; xUnit passed 1 test; `dotnet format --verify-no-changes` passed. Linux is not in CI.
@@ -32,3 +34,5 @@
 - 2026-10-16T05:20Z [CODE] `TASKS.md` now uses explicit `Task N` labels on checkbox bullets, preserving all existing task IDs from 1 through 32 across section headings.
 - 2026-10-16T05:35Z [CODE] Task 4 defines async story-session and host I/O contracts and references Core from the desktop project; both front ends can use the same contract without the engine depending on UI APIs.
 - 2026-10-16T05:35Z [TOOL] Task 4 Release build passed with 0 warnings/errors; xUnit passed 8 tests; `dotnet format --verify-no-changes` passed.
+- 2026-10-16T05:55Z [CODE] Task 5 adds `Z3StoryLoader`, parsed header metadata, typed load errors, and tests for malformed inputs, legacy headers, checksum, padding, and header address ranges.
+- 2026-10-16T05:55Z [TOOL] Task 5 Release build passed with 0 warnings/errors; xUnit passed 25 tests; format check passed; the local ignored Zork I file loaded as v3 with logical length 84,876 bytes.
