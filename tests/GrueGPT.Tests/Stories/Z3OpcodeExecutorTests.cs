@@ -323,6 +323,17 @@ public sealed class Z3OpcodeExecutorTests
     }
 
     [Fact]
+    public async Task StoreOpcodeAcceptsASmallConstantVariableReference()
+    {
+        // store global 16 42; quit
+        Z3ExecutionState state = CreateState([0x0D, 16, 42, 0xBA]);
+
+        await new Z3OpcodeExecutor(state, new TestInterpreterIO()).RunAsync();
+
+        Assert.Equal((ushort)42, state.Memory.ReadWord(GlobalVariablesAddress));
+    }
+
+    [Fact]
     public async Task CallsAndReturnsFromZeroLocalRoutine()
     {
         // call routine at 0x2200 (packed address 0x1100) -> global 16; quit

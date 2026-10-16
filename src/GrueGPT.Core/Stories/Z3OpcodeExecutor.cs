@@ -543,12 +543,16 @@ public sealed class Z3OpcodeExecutor
     private static byte GetVariableNumber(Z3DecodedInstruction instruction, int index)
     {
         Z3Operand operand = instruction.Operands[index];
-        if (operand.Type != Z3OperandType.Variable || operand.VariableNumber is null)
+        int variableNumber = operand.Type == Z3OperandType.Variable
+            ? operand.VariableNumber
+                ?? throw new InvalidDataException("A variable operand has no variable number.")
+            : operand.Value;
+        if (variableNumber > byte.MaxValue)
         {
-            throw new InvalidDataException("An indirect variable operand must be encoded as a variable.");
+            throw new InvalidDataException("An indirect variable reference must fit in one byte.");
         }
 
-        return operand.VariableNumber.Value;
+        return (byte)variableNumber;
     }
 
     private static byte RequireStoreVariable(Z3DecodedInstruction instruction) =>
