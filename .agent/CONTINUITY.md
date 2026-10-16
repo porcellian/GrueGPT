@@ -8,6 +8,9 @@
 - 2026-10-16T03:49Z [CODE] Use .NET 10, Avalonia, a shared interpreter core, CLI, and xUnit.
 
 ## [PROGRESS]
+- 2026-10-16T20:51Z [USER] User confirmed PR #23 merged; fetched `origin/main` contains merge commit `4548244`. Task 23 started on `feature/23-local-zork-regression`.
+- 2026-10-16T20:56Z [TOOL] The local Zork transcript exposed an indirect-variable decoding rejection. `GetVariableNumber` now accepts small-constant references; a generated opcode test covers the case, and the local Zork script passes. PowerShell is unavailable locally; its script's absent-story path is therefore not yet run here.
+- 2026-10-16T20:57Z [TOOL] Task 23 verification passed: bash syntax check, local Zork transcript, absent-story skip, ignored-story check, all 241 xUnit tests, Release build with 0 warnings/errors, format verification, and `git diff --check`. PowerShell remains unexecuted locally because no PowerShell host is installed.
 - 2026-10-16T20:40Z [TOOL] Task 21 is implemented and verified on `feature/21-z3-conformance-tests`; the generated-story suite passes 229 xUnit tests, Release build has 0 warnings/errors, formatter verification and `git diff --check` pass. Commit and PR publication pending.
 - 2026-10-16T20:41Z [TOOL] Supersedes the pending publication status above: Task 21 commit `3ab3d9e` is pushed and PR #22 is open at `https://github.com/porcellian/GrueGPT/pull/22` for manual merge.
 - 2026-10-16T20:43Z [USER] User confirmed PR #22 merged; fetched `origin/main` contains merge commit `45e0856`. Task 22 started on `feature/22-quetzal-interoperability-tests`.
@@ -51,6 +54,7 @@
 - 2026-10-16T18:28Z [TOOL] Task 15 local commit `06a90ce` and GitHub API commit `0950e1d` contain the same tree on `feature/15-quetzal-memory-chunks`; PR #16 is open at `https://github.com/porcellian/GrueGPT/pull/16` for manual merge. Apple Git HTTPS remains broken, and local/remote commit histories differ.
 
 ## [DISCOVERIES]
+- 2026-10-16T20:56Z [CODE] ZSpec 1.1 §4.2.3 says indirect variable-reference operands are usually small constants. Zork's initial code uses this form, so the executor must resolve the literal reference number instead of rejecting it.
 - 2026-10-16T20:45Z [CODE] An empty CMem payload validly restores unchanged original dynamic memory; malformed zero-run coverage must use a lone zero byte. Task 22 also verifies service-level interoperability with independently framed IFZS containing UMem and an odd padded unknown chunk.
 - 2026-10-16T20:39Z [CODE] Existing Z3 suites cover broad memory, text, object/property, dictionary, opcode, input/output, and control-flow behavior; Task 21 adds targeted dynamic/static write atomicity, property lengths 1–8, dictionary edge cases, false-branch fallthrough, divide-by-zero, and stream 3 nesting-depth checks.
 - 2026-10-16T16:07Z [CODE] Version 3 dictionaries use 4-byte encoded words padded to six Z-characters; negative entry counts indicate an unsorted user dictionary. Parse entries store dictionary address, token length, and one-based text-buffer position.

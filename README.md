@@ -162,6 +162,14 @@ The runner uses the same Version 3 story loader, opcode executor, and Quetzal
 restore service as the desktop app. It does not require stories to be tracked
 in the repository.
 
+Optional local Zork regression transcripts are available with
+`bash scripts/zork-regression.sh` on macOS or
+`powershell -NoProfile -File scripts/zork-regression.ps1` on Windows. Both use
+`stories/zork1.z3` by default, accept an alternate story path, and exit
+successfully with a `SKIP` message when the selected file is absent. These
+scripts are run manually and are not part of CI; the story remains ignored by
+Git.
+
 ## License and reference materials
 
 GrueGPT's original code and project documentation are licensed under the MIT
