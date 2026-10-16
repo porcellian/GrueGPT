@@ -115,7 +115,7 @@ story session.
 
 ## Supported platforms
 
-The initial desktop target is macOS and Windows. Linux is not a supported target at this time and is not included in CI.
+The desktop target is macOS and Windows. Linux is not supported and is not included in CI. The interpreter currently accepts raw Version 3 story files only. Versions 4–8 and Blorb files are planned for later phases.
 
 ## Build and test
 
@@ -139,6 +139,27 @@ Quetzal tests cover complete memory and call-stack round trips, compressed and
 uncompressed dynamic memory, malformed or incomplete saves, story identity
 mismatches, SAVE branch resume, and independently framed IFZS files with
 unknown padded chunks. All save fixtures are generated in the test suite.
+
+## Supported behavior and current limitations
+
+The first milestone implements the Version 3 instruction set and runtime
+features described above, including status updates, two output windows, line
+input, and Quetzal saves. The desktop and CLI accept raw story files; they do
+not open Blorb containers. Saves are associated with the story release,
+serial, and checksum, so restore them against the matching story file.
+
+Both front ends currently read a completed line at a time. Timed or
+character-by-character input is not implemented. The core supports transcript
+and command-file stream interfaces, but neither front end currently provides
+those optional host streams. Memory output stream 3 is supported. Sound-effect
+instructions are accepted without audio playback. Text decoding uses the
+Version 3 default alphabets and defined ZSCII mappings; custom alphabet and
+later-version Unicode tables are outside this milestone.
+
+Story files, including `stories/zork1.z3`, remain local and ignored by Git.
+Builds, tests, and published output do not need or bundle a story. Obtain a
+story separately and ensure you have the rights needed to use and distribute
+it.
 
 ## Command-line runner
 
@@ -169,6 +190,26 @@ Optional local Zork regression transcripts are available with
 successfully with a `SKIP` message when the selected file is absent. These
 scripts are run manually and are not part of CI; the story remains ignored by
 Git.
+
+## Publishing desktop builds
+
+Install the .NET 10 SDK and publish separately for each target runtime. These
+commands create self-contained publish directories, so users do not need to
+install the .NET runtime:
+
+```sh
+dotnet publish src/GrueGPT.Desktop/GrueGPT.Desktop.csproj -c Release -r osx-arm64 --self-contained true -o artifacts/publish/osx-arm64
+dotnet publish src/GrueGPT.Desktop/GrueGPT.Desktop.csproj -c Release -r osx-x64 --self-contained true -o artifacts/publish/osx-x64
+dotnet publish src/GrueGPT.Desktop/GrueGPT.Desktop.csproj -c Release -r win-x64 --self-contained true -o artifacts/publish/win-x64
+```
+
+The output is a platform-specific application directory, not a signed
+installer or native app bundle. Release packaging, code signing, macOS
+notarization, and Windows installer creation are not configured yet. Review
+the publish output before distributing it, and keep local stories, save files,
+the reference screenshot, and specification documents out of releases unless
+their redistribution rights are confirmed. See
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## License and reference materials
 

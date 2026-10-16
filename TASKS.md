@@ -39,7 +39,7 @@ Each checkbox is a separate task and pull request. The explicit `Task N` labels 
 - [x] **Task 21:** Add Z3 conformance tests for memory, text, object/property, dictionary, opcode, input/output, and control-flow edge cases.
 - [x] **Task 22:** Add Quetzal round-trip, malformed-file, wrong-story, branch-resume, and interoperability tests using redistributable or generated fixtures.
 - [x] **Task 23:** Add optional local Zork regression scripts that skip cleanly when `stories/zork1.z3` is absent; never make CI depend on or upload that file.
-- [ ] **Task 24:** Document build/run instructions, supported Z3 behavior, save-file handling, known limitations, and release packaging for macOS and Windows.
+- [x] **Task 24:** Document build/run instructions, supported Z3 behavior, save-file handling, known limitations, and release packaging for macOS and Windows.
 
 ## Later phase: Blorb
 
