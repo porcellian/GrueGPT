@@ -1,3 +1,5 @@
+using GrueGPT.Core.Stories;
+
 namespace GrueGPT.Core.Runtime;
 
 /// <summary>
@@ -6,8 +8,9 @@ namespace GrueGPT.Core.Runtime;
 /// </summary>
 /// <remarks>
 /// Implementations may target a terminal, a desktop UI, or a test harness.
-/// Story text is delivered in order; the host owns its display and scrolling.
-/// A null input line means the host has closed its input source.
+/// Story text is delivered in order; the host owns rendering and may consume
+/// full Version 3 screen snapshots through <see cref="IZ3ScreenIO"/>. A null
+/// input line means the host has closed its input source.
 /// </remarks>
 public interface IInterpreterIO
 {
@@ -35,4 +38,11 @@ public interface IZ3StreamIO
 
     /// <summary>Records one completed command to the selected command-file output stream.</summary>
     ValueTask WriteRecordedCommandAsync(string command, CancellationToken cancellationToken = default);
+}
+
+/// <summary>Optional callback for hosts that render the Version 3 character-cell screen model.</summary>
+public interface IZ3ScreenIO
+{
+    /// <summary>Publishes the latest status, window contents, prompt, and style metadata.</summary>
+    ValueTask PresentScreenAsync(Z3ScreenSnapshot snapshot, CancellationToken cancellationToken = default);
 }

@@ -12,6 +12,8 @@ public sealed class Z3OpcodeExecutor
     private readonly Z3TextDecoder _textDecoder;
     private readonly IInterpreterIO _io;
     private readonly IZ3StreamIO? _streamIO;
+    private readonly IZ3ScreenIO? _screenIO;
+    private readonly Z3ScreenModel _screen;
     private readonly Z3RandomNumberGenerator _random;
     private readonly Stack<Z3MemoryOutputFrame> _memoryOutputStreams = new();
     private bool _screenOutputSelected = true;
@@ -22,13 +24,16 @@ public sealed class Z3OpcodeExecutor
     public Z3OpcodeExecutor(
         Z3ExecutionState state,
         IInterpreterIO io,
-        Z3RandomNumberGenerator? randomNumberGenerator = null)
+        Z3RandomNumberGenerator? randomNumberGenerator = null,
+        Z3ScreenModel? screenModel = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(io);
         _state = state;
         _io = io;
         _streamIO = io as IZ3StreamIO;
+        _screenIO = io as IZ3ScreenIO;
+        _screen = screenModel ?? new Z3ScreenModel();
         _decoder = new Z3InstructionDecoder(state);
         _objects = new Z3ObjectTable(state.Memory, state.Header.ObjectTableAddress);
         _textDecoder = new Z3TextDecoder(state.Memory, state.Header.AbbreviationsAddress);
@@ -39,15 +44,20 @@ public sealed class Z3OpcodeExecutor
             byte flags2LowByte = _state.Memory.ReadByte(Z3Memory.Flags2Address + 1);
             _state.Memory.WriteByte(Z3Memory.Flags2Address + 1, (byte)(flags2LowByte & ~0x01));
         }
+
+        _state.Memory.SetInterpreterFlags1(0x30, 0x20);
     }
 
     public bool IsHalted => _halted;
 
     /// <summary>The current Version 3 output window selected by set_window.</summary>
-    public byte CurrentWindow { get; private set; }
+    public byte CurrentWindow => _screen.CurrentWindow;
 
     /// <summary>The current upper-window height selected by split_window.</summary>
-    public ushort UpperWindowHeight { get; private set; }
+    public ushort UpperWindowHeight => checked((ushort)_screen.UpperWindowHeight);
+
+    /// <summary>The character-cell screen state exposed for hosts and tests.</summary>
+    public Z3ScreenSnapshot Screen => _screen.CreateSnapshot();
 
     /// <summary>Decodes and executes one instruction; returns false after quit.</summary>
     public async ValueTask<bool> ExecuteNextAsync(CancellationToken cancellationToken = default)
@@ -127,7 +137,7 @@ public sealed class Z3OpcodeExecutor
             case 6:
                 throw DeferredOpcode("restore", "task 17");
             case 7:
-                Restart();
+                await RestartAsync(cancellationToken).ConfigureAwait(false);
                 break;
             case 8:
                 _state.ReturnFromRoutine(_state.PopStack());
@@ -444,7 +454,8 @@ public sealed class Z3OpcodeExecutor
                 _state.WriteVariable(GetVariableNumber(instruction, 0), _state.PopStack());
                 break;
             case 10:
-                UpperWindowHeight = GetValue(instruction, 0);
+                _screen.SplitWindow(GetValue(instruction, 0));
+                await PresentScreenAsync(cancellationToken).ConfigureAwait(false);
                 break;
             case 11:
                 {
@@ -454,7 +465,8 @@ public sealed class Z3OpcodeExecutor
                         throw new InvalidOperationException("Version 3 supports output windows 0 and 1 only.");
                     }
 
-                    CurrentWindow = (byte)window;
+                    _screen.SelectWindow((byte)window);
+                    await PresentScreenAsync(cancellationToken).ConfigureAwait(false);
                     break;
                 }
             case 19:
@@ -572,12 +584,16 @@ public sealed class Z3OpcodeExecutor
 
         ValidateInputBuffer(parseBufferAddress, 2 + (maximumWords * 4), "parse");
         await UpdateStatusAsync(cancellationToken).ConfigureAwait(false);
+        _screen.BeginInput();
+        await PresentScreenAsync(cancellationToken).ConfigureAwait(false);
 
         string? inputLine = _inputStream == 0
             ? await _io.ReadLineAsync(cancellationToken).ConfigureAwait(false)
             : await GetStreamIO().ReadPlaybackCommandAsync(cancellationToken).ConfigureAwait(false);
         if (inputLine is null)
         {
+            _screen.EndInput();
+            await PresentScreenAsync(cancellationToken).ConfigureAwait(false);
             _halted = true;
             return;
         }
@@ -621,10 +637,14 @@ public sealed class Z3OpcodeExecutor
     private async ValueTask EchoInputLineAsync(string line, CancellationToken cancellationToken)
     {
         string text = $"{line}\n";
+        _screen.EndInput();
         if (_screenOutputSelected)
         {
+            _screen.WriteText(text);
             await _io.WriteTextAsync(text, cancellationToken).ConfigureAwait(false);
         }
+
+        await PresentScreenAsync(cancellationToken).ConfigureAwait(false);
 
         if (IsTranscriptSelected)
         {
@@ -720,7 +740,7 @@ public sealed class Z3OpcodeExecutor
     private IZ3StreamIO GetStreamIO() => _streamIO
         ?? throw new NotSupportedException("This host does not provide transcript or command-file streams.");
 
-    private void Restart()
+    private async ValueTask RestartAsync(CancellationToken cancellationToken)
     {
         _state.Restart();
         _random.Reset();
@@ -734,9 +754,10 @@ public sealed class Z3OpcodeExecutor
             _state.Memory.WriteByte(Z3Memory.Flags2Address + 1, (byte)(flags2LowByte & ~0x01));
         }
 
-        CurrentWindow = 0;
-        UpperWindowHeight = 0;
+        _screen.Reset();
+        _state.Memory.SetInterpreterFlags1(0x30, 0x20);
         _halted = false;
+        await PresentScreenAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private async ValueTask UpdateStatusAsync(CancellationToken cancellationToken)
@@ -748,9 +769,10 @@ public sealed class Z3OpcodeExecutor
         ushort scoreOrHour = _state.Memory.ReadWord(_state.Header.GlobalVariablesAddress + sizeof(ushort));
         ushort movesOrMinute = _state.Memory.ReadWord(_state.Header.GlobalVariablesAddress + (2 * sizeof(ushort)));
         bool isTimeGame = (_state.Memory.ReadByte(Z3Memory.Flags1Address) & 0x02) != 0;
-        await _io.UpdateStatusAsync(
-            new StoryStatus(location, unchecked((short)scoreOrHour), movesOrMinute, isTimeGame),
-            cancellationToken).ConfigureAwait(false);
+        StoryStatus status = new(location, unchecked((short)scoreOrHour), movesOrMinute, isTimeGame);
+        _screen.SetStatus(status);
+        await _io.UpdateStatusAsync(status, cancellationToken).ConfigureAwait(false);
+        await PresentScreenAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private bool VerifyChecksum()
@@ -785,6 +807,8 @@ public sealed class Z3OpcodeExecutor
 
         if (_screenOutputSelected)
         {
+            _screen.WriteText(text);
+            await PresentScreenAsync(cancellationToken).ConfigureAwait(false);
             await _io.WriteTextAsync(text, cancellationToken).ConfigureAwait(false);
         }
 
@@ -794,6 +818,10 @@ public sealed class Z3OpcodeExecutor
         }
 
     }
+
+    private ValueTask PresentScreenAsync(CancellationToken cancellationToken) => _screenIO is null
+        ? ValueTask.CompletedTask
+        : _screenIO.PresentScreenAsync(_screen.CreateSnapshot(), cancellationToken);
 
     private static NotSupportedException DeferredOpcode(string name, string task) =>
         new($"The Z-machine {name} opcode is implemented in {task}.");
