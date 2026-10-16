@@ -18,6 +18,7 @@
 - 2026-10-16T05:20Z [USER] User requested globally visible task IDs in `TASKS.md`; preserve IDs 1–32 and label them explicitly so Markdown section boundaries cannot restart numbering.
 - 2026-10-16T05:20Z [TOOL] Numbering fix commit `71b4ec1` was pushed on `fix/task-number-labels`; PR #4 was opened at `https://github.com/porcellian/GrueGPT/pull/4` and user later confirmed it merged.
 - 2026-10-16T05:35Z [TOOL] User confirmed PR #4 merged; fetched `origin/main` is at `57a7ae1`, and task 4 is underway on `feature/4-interpreter-boundaries`.
+- 2026-10-16T05:35Z [TOOL] Task 4 commit `8a2b92e` is pushed on `feature/4-interpreter-boundaries`; PR #5 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/5`.
 
 ## [DISCOVERIES]
 - 2026-10-16T03:49Z [TOOL] Local .NET SDK is 10.0.400.
