@@ -93,3 +93,7 @@
 - 2026-10-16T18:38Z [CODE] Task 16 adds Quetzal `Stks` frame state and codec, including dummy frame, 24-bit return PCs, flags, argument masks, locals, per-frame stacks, and execution-state snapshot/restore. README and checklist updated; opcode/UI save integration remains Task 17.
 - 2026-10-16T18:39Z [TOOL] Task 16 Release build succeeded with 0 warnings/errors; xUnit passed 194 tests; formatting verification and `git diff --check` passed.
 - 2026-10-16T18:53Z [TOOL] Local commit `0ba0a97` and GitHub API commit `145938c` contain the same Task 16 tree; PR #17 is open at `https://github.com/porcellian/GrueGPT/pull/17` for manual merge. Apple Git HTTPS still crashes.
+- 2026-10-16T18:56Z [USER] User confirmed PR #17 merged; GitHub main is merge commit `c69f3f7`, whose tree matches local Task 16. Task 17 started on `feature/17-quetzal-save-restore`.
+- 2026-10-16T19:06Z [CODE] Task 17 adds Quetzal save orchestration, story identity validation, transactional restore of dynamic memory and frames, SAVE/RESTORE branch resume behavior, and host save/restore actions. README and checklist updated; desktop file dialogs remain Task 19.
+- 2026-10-16T19:06Z [TOOL] Task 17 Release build succeeded with 0 warnings/errors; xUnit passed 206 tests; formatting verification and `git diff --check` passed.
+- 2026-10-16T19:09Z [TOOL] Supersedes the 19:06Z Task 17 verification count after the final branch-case regression test: Release build succeeded with 0 warnings/errors, xUnit passed 207 tests, and formatting verification passed.

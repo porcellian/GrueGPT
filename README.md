@@ -88,8 +88,14 @@ only when its size exactly matches dynamic memory. `QuetzalStackCodec`
 serializes and restores Version 3 top-level evaluation
 values, the required dummy frame, and oldest-first call frames with locals,
 argument masks, result behavior, and per-frame evaluation stacks. The execution
-state can snapshot and restore these stacks together with a supplied resume PC;
-story SAVE/RESTORE instructions and UI actions are handled by the next task.
+state can snapshot and restore these stacks together with a supplied resume PC.
+`Z3SaveRestoreService` combines IFhd, CMem, and Stks, verifies release/serial/
+checksum identity, preserves interpreter-owned header flags, and validates a
+restore before changing live state. The Z3 SAVE/RESTORE opcodes apply Version 3
+branch behavior; host save/restore actions are exposed through
+`IZ3SaveRestoreIO` and `Z3OpcodeExecutor` for desktop menus. Host snapshots use
+a private Quetzal extension to distinguish direct-PC resume from a story SAVE
+continuation.
 
 `Z3ScreenModel` provides the Version 3 status row and separate upper and lower
 windows. It wraps fixed-width text, scrolls the lower window upward, clears and

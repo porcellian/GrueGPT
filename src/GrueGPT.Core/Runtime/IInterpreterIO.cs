@@ -46,3 +46,13 @@ public interface IZ3ScreenIO
     /// <summary>Publishes the latest status, window contents, prompt, and style metadata.</summary>
     ValueTask PresentScreenAsync(Z3ScreenSnapshot snapshot, CancellationToken cancellationToken = default);
 }
+
+/// <summary>Optional host file-selection and persistence boundary for Version 3 Quetzal saves.</summary>
+public interface IZ3SaveRestoreIO
+{
+    /// <summary>Stores a complete Quetzal file; false means the user cancelled or the write failed.</summary>
+    ValueTask<bool> SaveGameAsync(ReadOnlyMemory<byte> saveFile, CancellationToken cancellationToken = default);
+
+    /// <summary>Reads a selected Quetzal file; null means the user cancelled or the read failed.</summary>
+    ValueTask<byte[]?> LoadGameAsync(CancellationToken cancellationToken = default);
+}
