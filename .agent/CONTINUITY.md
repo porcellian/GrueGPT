@@ -25,6 +25,8 @@
 - 2026-10-16T15:00Z [TOOL] Task 6 commit `cfb8929` is pushed on `feature/6-memory-map`; PR #7 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/7`.
 - 2026-10-16T15:06Z [USER] User confirmed PR #7 merged; fetched `origin/main` is `91f75de`, and task 7 is underway on `feature/7-zmachine-text-decoder`.
 - 2026-10-16T15:09Z [TOOL] Task 7 commit `66cd0bc` is pushed on `feature/7-zmachine-text-decoder`; PR #8 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/8`.
+- 2026-10-16T15:23Z [USER] User confirmed PR #8 merged; fetched `origin/main` is `32ba183`, and task 8 is underway on `feature/8-z3-instruction-execution`.
+- 2026-10-16T15:27Z [TOOL] Task 8 commit `7c3d357` is pushed on `feature/8-z3-instruction-execution`; PR #9 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/9`.
 
 ## [DISCOVERIES]
 - 2026-10-16T03:49Z [TOOL] Local .NET SDK is 10.0.400.
@@ -32,6 +34,7 @@
 - 2026-10-16T05:55Z [TOOL] Z-Machine Standard 1.1 specifies v3 file-length units of 2 bytes, checksum coverage from byte 0x40 to logical file length, a 128 KiB v1-v3 size limit, and legacy v3 files that may omit length/checksum.
 - 2026-10-16T14:59Z [TOOL] Version 3 packed addresses expand by 2 and may reach 131070 bytes in 128 KiB stories; interpreter reads therefore must reach beyond 64 KiB. Version 3 Flags 1 interpreter-controlled bits are 4–6; Flags 2 game-controlled bits are 0–1, with bit 2 clear-only for game writes.
 - 2026-10-16T15:06Z [TOOL] Version 3 uses the default A0/A1/A2 alphabets; A2 z-characters 6 and 7 are the ZSCII escape and newline, so the alphabet's stored positions must retain placeholders for both.
+- 2026-10-16T15:23Z [TOOL] Instruction forms are distinguished by the top two bits: `$00–$7F` long, `$80–$BF` short, and `$C0–$FF` variable. Variable zero pops for value reads and pushes for result stores; indirect operations inspect or replace the existing stack top.
 
 ## [OUTCOMES]
 - 2026-10-16T04:03Z [TOOL] Foundation build succeeded with 0 warnings/errors; xUnit passed 1 test; `dotnet format --verify-no-changes` passed. Linux is not in CI.
@@ -47,3 +50,5 @@
 - 2026-10-16T14:59Z [TOOL] Task 6 Release build passed with 0 warnings/errors; xUnit passed 41 tests; `dotnet format --verify-no-changes` and `git diff --check` passed.
 - 2026-10-16T15:06Z [CODE] Task 7 adds `Z3TextDecoder` for packed text, one-character alphabet shifts, all three abbreviation groups, ZSCII escapes, and defined output character mapping; README and task checklist reflect its Version 3 scope.
 - 2026-10-16T15:06Z [TOOL] Task 7 Release build passed with 0 warnings/errors; xUnit passed 55 tests; `dotnet format --verify-no-changes` passed.
+- 2026-10-16T15:23Z [CODE] Task 8 adds generic v3 instruction decoding plus execution state for operand evaluation, variable access, branches, jumps, routine calls, returns, and per-routine stacks; opcode execution remains task 11.
+- 2026-10-16T15:23Z [TOOL] Task 8 Release build passed with 0 warnings/errors; xUnit passed 75 tests; `dotnet format --verify-no-changes` passed.

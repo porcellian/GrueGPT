@@ -38,6 +38,12 @@ ZSCII escape sequences, and maps defined output characters to Unicode. Custom
 alphabet tables and later-version Unicode translation tables are outside the
 Version 3 scope.
 
+`Z3InstructionDecoder` reads v3 long, short, and variable instruction forms,
+evaluates variable operands in order, and records store, branch, and inline
+text data while advancing the program counter. `Z3ExecutionState` manages
+stack, local, and global variables; routine frames and returns; signed jumps;
+and conditional branches. Opcode behavior is added in a later task.
+
 ## Supported platforms
 
 The initial desktop target is macOS and Windows. Linux is not a supported target at this time and is not included in CI.
