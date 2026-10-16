@@ -26,3 +26,12 @@ dotnet test GrueGPT.sln --no-build
 ```
 
 See [TASKS.md](TASKS.md) for the staged implementation roadmap. The initial CI matrix runs on macOS and Windows.
+
+## License and reference materials
+
+GrueGPT's original code and project documentation are licensed under the MIT
+License; see [LICENSE](LICENSE). The project standards and GUI screenshot are
+third-party reference materials and are not covered by that license. Their
+attribution and current redistribution status are recorded in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Confirm permissions before
+including those materials in a release.
