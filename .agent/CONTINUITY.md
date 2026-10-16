@@ -32,6 +32,7 @@
 - 2026-10-16T16:07Z [USER] User confirmed PR #10 merged; fetched `origin/main` advanced to `02065c8`, and task 10 started on `feature/10-z3-dictionary-input-buffer` (supersedes the PR #10 open status above).
 - 2026-10-16T16:07Z [TOOL] Task 10 commit `10cc308` was pushed on `feature/10-z3-dictionary-input-buffer`; PR #11 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/11`.
 - 2026-10-16T16:24Z [USER] User confirmed PR #11 merged; fetched `origin/main` advanced to `433cf51`, and task 11 started on `feature/11-z3-opcode-dispatch` (supersedes the PR #11 open status above).
+- 2026-10-16T16:30Z [TOOL] Task 11 commit `0498b85` was pushed; PR #12 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/12`.
 
 ## [DISCOVERIES]
 - 2026-10-16T16:07Z [CODE] Version 3 dictionaries use 4-byte encoded words padded to six Z-characters; negative entry counts indicate an unsorted user dictionary. Parse entries store dictionary address, token length, and one-based text-buffer position.
