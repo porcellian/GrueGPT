@@ -14,6 +14,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../../src/GrueGPT.Cli/GrueGPT.Cli.csproj" />
     <ProjectReference Include="../../src/GrueGPT.Core/GrueGPT.Core.csproj" />
   </ItemGroup>
 </Project>

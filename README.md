@@ -129,6 +129,28 @@ dotnet test GrueGPT.sln --no-build
 
 See [TASKS.md](TASKS.md) for the staged implementation roadmap. The initial CI matrix runs on macOS and Windows.
 
+## Command-line runner
+
+Run a local Version 3 story with:
+
+```sh
+dotnet run --project src/GrueGPT.Cli -- stories/zork1.z3
+```
+
+The CLI reads player commands from standard input and writes story text and
+the `> ` prompt to standard output. Status updates and errors go to standard
+error. When a story executes SAVE or RESTORE, the CLI prompts for a Quetzal
+file path; an empty path cancels the operation. Resume a saved game directly
+with:
+
+```sh
+dotnet run --project src/GrueGPT.Cli -- stories/zork1.z3 --restore saves/zork1.sav
+```
+
+The runner uses the same Version 3 story loader, opcode executor, and Quetzal
+restore service as the desktop app. It does not require stories to be tracked
+in the repository.
+
 ## License and reference materials
 
 GrueGPT's original code and project documentation are licensed under the MIT
