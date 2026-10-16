@@ -3,16 +3,17 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using GrueGPT.Core.Resources;
 using GrueGPT.Core.Runtime;
 using GrueGPT.Core.Stories;
 
 namespace GrueGPT.Desktop;
 
-public sealed partial class MainWindow : Window, IInterpreterIO, IZ3ScreenIO, IZ3SaveRestoreIO
+public sealed partial class MainWindow : Window, IInterpreterIO, IZ3ScreenIO, IZ3SaveRestoreIO, IZ3SoundIO
 {
-    private static readonly FilePickerFileType StoryFileType = new("Z-machine v3 stories")
+    private static readonly FilePickerFileType StoryFileType = new("Z-machine v3 stories and Blorb games")
     {
-        Patterns = ["*.z3", "*.dat", "*.zork"],
+        Patterns = ["*.z3", "*.dat", "*.zork", "*.blorb", "*.zblorb", "*.zlb"],
         AppleUniformTypeIdentifiers = ["public.data"],
     };
 
@@ -32,9 +33,11 @@ public sealed partial class MainWindow : Window, IInterpreterIO, IZ3ScreenIO, IZ
     private readonly MenuItem _saveGameMenuItem;
     private readonly MenuItem _loadGameMenuItem;
     private readonly object _inputLock = new();
+    private readonly BlorbSoundPlayer _soundPlayer;
     private Z3ScreenSnapshot? _currentSnapshot;
     private TaskCompletionSource<string?>? _pendingCommand;
     private LoadedStory? _loadedStory;
+    private BlorbFile? _loadedBlorb;
     private Z3OpcodeExecutor? _executor;
     private CancellationTokenSource? _sessionCancellation;
     private Task? _sessionTask;
@@ -43,6 +46,7 @@ public sealed partial class MainWindow : Window, IInterpreterIO, IZ3ScreenIO, IZ
     public MainWindow()
     {
         Avalonia.Markup.Xaml.AvaloniaXamlLoader.Load(this);
+        _soundPlayer = new(message => ReportErrorAsync(message));
         _statusText = this.FindControl<TextBlock>("StatusText")!;
         _playArea = this.FindControl<Border>("PlayArea")!;
         _screenText = this.FindControl<TextBlock>("ScreenText")!;
@@ -195,6 +199,12 @@ public sealed partial class MainWindow : Window, IInterpreterIO, IZ3ScreenIO, IZ
             return buffer.ToArray();
         }));
 
+    public ValueTask PlaySoundAsync(uint resourceNumber, ReadOnlyMemory<byte> waveData, bool repeat, CancellationToken cancellationToken = default) =>
+        _soundPlayer.PlaySoundAsync(resourceNumber, waveData, repeat, cancellationToken);
+
+    public ValueTask StopSoundAsync(uint resourceNumber, CancellationToken cancellationToken = default) =>
+        _soundPlayer.StopSoundAsync(resourceNumber, cancellationToken);
+
     private void ApplySnapshot(Z3ScreenSnapshot snapshot)
     {
         _currentSnapshot = snapshot;
@@ -285,9 +295,15 @@ public sealed partial class MainWindow : Window, IInterpreterIO, IZ3ScreenIO, IZ
 
             using IStorageFile file = files[0];
             await using Stream source = await file.OpenReadAsync();
-            LoadedStory story = new Z3StoryLoader().Load(source);
+            using MemoryStream container = new();
+            await source.CopyToAsync(container);
+            byte[] bytes = container.ToArray();
+            BlorbFile? blorb = IsBlorbFile(file.Name) ? BlorbFileCodec.Read(bytes) : null;
+            using MemoryStream storyStream = new(blorb is null ? bytes : blorb.GetZCodeExecutable().ToArray());
+            LoadedStory story = new Z3StoryLoader().Load(storyStream);
             await StopCurrentSessionAsync();
             _loadedStory = story;
+            _loadedBlorb = blorb;
             Title = $"GrueGPT — {Path.GetFileNameWithoutExtension(file.Name)}";
             _errorPanel.IsVisible = false;
             StartSession(new Z3ExecutionState(story));
@@ -371,7 +387,7 @@ public sealed partial class MainWindow : Window, IInterpreterIO, IZ3ScreenIO, IZ
 
     private void StartSession(Z3ExecutionState state)
     {
-        _executor = new Z3OpcodeExecutor(state, this);
+        _executor = new Z3OpcodeExecutor(state, this, blorb: _loadedBlorb);
         PresentScreen(_executor.Screen);
         _sessionCancellation = new CancellationTokenSource();
         CancellationToken cancellationToken = _sessionCancellation.Token;
@@ -410,6 +426,7 @@ public sealed partial class MainWindow : Window, IInterpreterIO, IZ3ScreenIO, IZ
         _sessionCancellation = null;
         _sessionTask = null;
         _executor = null;
+        await _soundPlayer.StopSoundAsync(0).ConfigureAwait(true);
     }
 
     private void SubmitCommand()
@@ -489,6 +506,12 @@ public sealed partial class MainWindow : Window, IInterpreterIO, IZ3ScreenIO, IZ
     {
         _sessionCancellation?.Cancel();
         CompletePendingCommand(null);
+        _soundPlayer.Dispose();
         base.OnClosed(e);
     }
+
+    private static bool IsBlorbFile(string fileName) =>
+        fileName.EndsWith(".blorb", StringComparison.OrdinalIgnoreCase)
+        || fileName.EndsWith(".zblorb", StringComparison.OrdinalIgnoreCase)
+        || fileName.EndsWith(".zlb", StringComparison.OrdinalIgnoreCase);
 }

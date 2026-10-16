@@ -1,4 +1,5 @@
 using System.Globalization;
+using GrueGPT.Core.Resources;
 using GrueGPT.Core.Runtime;
 
 namespace GrueGPT.Core.Stories;
@@ -14,6 +15,9 @@ public sealed class Z3OpcodeExecutor
     private readonly IZ3StreamIO? _streamIO;
     private readonly IZ3ScreenIO? _screenIO;
     private readonly IZ3SaveRestoreIO? _saveRestoreIO;
+    private readonly IZ3SoundIO? _soundIO;
+    private readonly BlorbFile? _blorb;
+    private readonly Dictionary<uint, byte[]> _preparedSounds = [];
     private readonly Z3ScreenModel _screen;
     private readonly Z3RandomNumberGenerator _random;
     private readonly Stack<Z3MemoryOutputFrame> _memoryOutputStreams = new();
@@ -27,7 +31,8 @@ public sealed class Z3OpcodeExecutor
         Z3ExecutionState state,
         IInterpreterIO io,
         Z3RandomNumberGenerator? randomNumberGenerator = null,
-        Z3ScreenModel? screenModel = null)
+        Z3ScreenModel? screenModel = null,
+        BlorbFile? blorb = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(io);
@@ -36,6 +41,8 @@ public sealed class Z3OpcodeExecutor
         _streamIO = io as IZ3StreamIO;
         _screenIO = io as IZ3ScreenIO;
         _saveRestoreIO = io as IZ3SaveRestoreIO;
+        _soundIO = io as IZ3SoundIO;
+        _blorb = blorb;
         _screen = screenModel ?? new Z3ScreenModel();
         _decoder = new Z3InstructionDecoder(state);
         _objects = new Z3ObjectTable(state.Memory, state.Header.ObjectTableAddress);
@@ -519,11 +526,68 @@ public sealed class Z3OpcodeExecutor
                 SelectInputStream(GetValue(instruction, 0));
                 break;
             case 21:
+                await ExecuteSoundEffectAsync(instruction, cancellationToken).ConfigureAwait(false);
                 break;
             default:
                 throw UnknownOpcode(instruction);
         }
 
+    }
+
+    private async ValueTask ExecuteSoundEffectAsync(Z3DecodedInstruction instruction, CancellationToken cancellationToken)
+    {
+        if (_soundIO is null || _blorb is null || instruction.Operands.Count < 2)
+        {
+            return;
+        }
+
+        uint number = GetValue(instruction, 0);
+        ushort action = GetValue(instruction, 1);
+        switch (action)
+        {
+            case 1: // Prepare.
+                if (number != 0 && _blorb.FindResource("Snd ", number) is BlorbResource prepareResource
+                    && prepareResource.Chunk.Id == "FORM")
+                {
+                    _preparedSounds[number] = BlorbAiffCodec.DecodeToWave(prepareResource);
+                }
+
+                break;
+            case 2: // Start.
+                if (number == 0)
+                {
+                    return;
+                }
+
+                if (!_preparedSounds.TryGetValue(number, out byte[]? waveData))
+                {
+                    BlorbResource? resource = _blorb.FindResource("Snd ", number);
+                    if (resource is null || resource.Chunk.Id != "FORM")
+                    {
+                        return;
+                    }
+
+                    waveData = BlorbAiffCodec.DecodeToWave(resource);
+                }
+
+                bool repeats = _blorb.Metadata.SoundLoops.FirstOrDefault(loop => loop.SoundNumber == number)?.Repeats == true;
+                await _soundIO.PlaySoundAsync(number, waveData, repeats, cancellationToken).ConfigureAwait(false);
+                break;
+            case 3: // Stop.
+                await _soundIO.StopSoundAsync(number, cancellationToken).ConfigureAwait(false);
+                break;
+            case 4: // Finish.
+                if (number == 0)
+                {
+                    _preparedSounds.Clear();
+                }
+                else
+                {
+                    _preparedSounds.Remove(number);
+                }
+
+                break;
+        }
     }
 
     private ushort GetValue(Z3DecodedInstruction instruction, int index) => GetValue(instruction.Operands[index]);
