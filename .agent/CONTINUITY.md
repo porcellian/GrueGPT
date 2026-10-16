@@ -10,6 +10,7 @@
 ## [PROGRESS]
 - 2026-10-16T04:01Z [TOOL] Task 1 commit `e9091cb` was pushed on `feature/1-project-foundation`; user confirmed PR #1 merged and fetched `origin/main` contains merge commit `cde737f`.
 - 2026-10-16T04:10Z [TOOL] Windows CI's format check found CRLF checkout line endings in C# files; added `.gitattributes` with `*.cs text eol=lf` and reverified locally.
+- 2026-10-16T04:32Z [TOOL] Task 2 commit `45ec8f2` is pushed on `feature/2-project-license`; PR #2 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/2`.
 - 2026-10-16T04:32Z [USER] User selected MIT for GrueGPT code; third-party standards and GUI reference remain outside that license.
 - 2026-10-16T04:32Z [CODE] Task 2 documentation attributes the bundled standards and GUI reference and marks redistribution permissions unconfirmed; release guidance excludes them until rights are verified.
 
