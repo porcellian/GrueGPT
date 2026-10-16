@@ -14,7 +14,8 @@
 - 2026-10-16T04:32Z [USER] User selected MIT for GrueGPT code; third-party standards and GUI reference remain outside that license.
 - 2026-10-16T04:32Z [CODE] Task 2 documentation attributes the bundled standards and GUI reference and marks redistribution permissions unconfirmed; release guidance excludes them until rights are verified.
 - 2026-10-16T05:05Z [TOOL] User confirmed PR #2 merged; fetched `origin/main` is at `ce2f0d0` and task 3 is underway on `feature/3-synthetic-story-test-utils`.
-- 2026-10-16T05:05Z [TOOL] Task 3 commit `36dca84` is pushed on `feature/3-synthetic-story-test-utils`; PR #3 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/3`.
+- 2026-10-16T05:05Z [TOOL] Task 3 commit `36dca84` was pushed on `feature/3-synthetic-story-test-utils`; user later confirmed PR #3 merged, and fetched `origin/main` contains merge commit `0ce2122`.
+- 2026-10-16T05:20Z [USER] User requested globally visible task IDs in `TASKS.md`; preserve IDs 1–32 and label them explicitly so Markdown section boundaries cannot restart numbering.
 
 ## [DISCOVERIES]
 - 2026-10-16T03:49Z [TOOL] Local .NET SDK is 10.0.400.
@@ -25,3 +26,4 @@
 - 2026-10-16T04:10Z [TOOL] After the Windows CI fix, formatting passed, Release build had 0 warnings/errors, and xUnit passed 1 test.
 - 2026-10-16T04:32Z [CODE] Task 2 adds an MIT license for GrueGPT, identifies third-party attribution and redistribution status in `THIRD_PARTY_NOTICES.md`, and links the notice from README.
 - 2026-10-16T05:05Z [TOOL] Task 3 Release build passed with 0 warnings/errors; xUnit passed 8 tests; `dotnet format --verify-no-changes` passed. Tests use the new deterministic synthetic Z3 image builder with configurable headers/checksum and generated memory fixtures.
+- 2026-10-16T05:20Z [CODE] `TASKS.md` now uses explicit `Task N` labels on checkbox bullets, preserving all existing task IDs from 1 through 32 across section headings.
