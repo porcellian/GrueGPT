@@ -13,6 +13,7 @@
 - 2026-10-16T20:43Z [USER] User confirmed PR #22 merged; fetched `origin/main` contains merge commit `45e0856`. Task 22 started on `feature/22-quetzal-interoperability-tests`.
 - 2026-10-16T20:45Z [TOOL] Task 22 tests are implemented and pass locally; 240 xUnit tests pass, pending final build/format review and PR publication.
 - 2026-10-16T20:46Z [TOOL] Supersedes the pending verification status above: Task 22 Release build succeeded with 0 warnings/errors, all 240 xUnit tests passed, `dotnet format --verify-no-changes` and `git diff --check` passed. Commit and PR publication pending.
+- 2026-10-16T20:47Z [TOOL] Supersedes the pending publication status above: Task 22 commit `95b7ad5` is pushed and PR #23 is open at `https://github.com/porcellian/GrueGPT/pull/23` for manual merge.
 - 2026-10-16T04:01Z [TOOL] Task 1 commit `e9091cb` was pushed on `feature/1-project-foundation`; user confirmed PR #1 merged and fetched `origin/main` contains merge commit `cde737f`.
 - 2026-10-16T04:10Z [TOOL] Windows CI's format check found CRLF checkout line endings in C# files; added `.gitattributes` with `*.cs text eol=lf` and reverified locally.
 - 2026-10-16T04:32Z [TOOL] Task 2 commit `45ec8f2` was pushed on `feature/2-project-license`; PR #2 was opened at `https://github.com/porcellian/GrueGPT/pull/2` and user later confirmed it merged.
