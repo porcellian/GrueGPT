@@ -1,0 +1,14 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="GrueGPT.Desktop.MainWindow"
+        Title="GrueGPT"
+        Width="1000"
+        Height="760"
+        MinWidth="640"
+        MinHeight="480">
+  <Grid>
+    <TextBlock Text="GrueGPT — Z-machine v3"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center" />
+  </Grid>
+</Window>
