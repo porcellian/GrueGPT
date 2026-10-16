@@ -236,6 +236,228 @@ public sealed class BlorbFileCodecTests
         Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(withoutPad));
     }
 
+    [Fact]
+    public void ParsesMetadataIdentityDescriptionsFrontispiecePaletteResolutionAndZMachineHints()
+    {
+        byte[] identity = new byte[13];
+        BinaryPrimitives.WriteUInt16BigEndian(identity, 0x1234);
+        new byte[] { 0x41, 0x42, 0x43, 0x44, 0x45, 0x46 }.CopyTo(identity, 2);
+        BinaryPrimitives.WriteUInt16BigEndian(identity.AsSpan(8), 0x5678);
+        byte[] encoded = BuildBlorb(
+        [
+            new ChunkDefinition("PNG ", [0x89, 0x50, 0x4E, 0x47]),
+            new ChunkDefinition("OGGV", [1, 2]),
+            new ChunkDefinition("IFmd", "<ifindex/>"u8.ToArray()),
+            new ChunkDefinition("AUTH", "Example Author"u8.ToArray()),
+            new ChunkDefinition("(c) ", "2026 Example"u8.ToArray()),
+            new ChunkDefinition("ANNO", "Test package"u8.ToArray()),
+            new ChunkDefinition("IFhd", identity),
+            new ChunkDefinition("RelN", [0xAB, 0xCD]),
+            new ChunkDefinition("Fspc", UInt32(17)),
+            new ChunkDefinition("RDes", MakeDescriptions([("Pict", 17u, "Cover café")])),
+            new ChunkDefinition("Plte", [0x10, 0x20, 0x30]),
+            new ChunkDefinition("Reso", MakeResolution(17, 800, 600, 0, 0, 1600, 1200, 1, 1, 0, 0, 2, 1)),
+            new ChunkDefinition("APal", UInt32(17)),
+            new ChunkDefinition("Loop", UInt32Pairs((4, 0), (5, 1))),
+        ],
+        [
+            new ResourceDefinition("Pict", 17, 0),
+            new ResourceDefinition("Snd ", 4, 1),
+            new ResourceDefinition("Snd ", 5, 1),
+        ]);
+
+        BlorbMetadata metadata = BlorbFileCodec.Read(encoded).Metadata;
+
+        Assert.Equal("<ifindex/>", metadata.Xml);
+        Assert.Equal("Example Author", metadata.Author);
+        Assert.Equal("2026 Example", metadata.Copyright);
+        Assert.Equal("Test package", metadata.Annotation);
+        Assert.Equal((ushort)0x1234, metadata.GameIdentifier!.ReleaseNumber);
+        Assert.Equal(new byte[] { 0x41, 0x42, 0x43, 0x44, 0x45, 0x46 }, metadata.GameIdentifier.SerialNumber.ToArray());
+        Assert.Equal((ushort)0x5678, metadata.GameIdentifier.Checksum);
+        Assert.Equal(0u, metadata.GameIdentifier.InitialProgramCounter);
+        Assert.Equal((ushort)0xABCD, metadata.ReleaseNumber);
+        Assert.Equal(17u, metadata.Frontispiece!.Number);
+        Assert.Equal(BlorbPaletteKind.Colors, metadata.Palette!.Kind);
+        Assert.Equal(new BlorbRgbColor(0x10, 0x20, 0x30), Assert.Single(metadata.Palette.Colors));
+        Assert.Equal((uint)800, metadata.Resolution!.StandardWidth);
+        Assert.Equal((uint)600, metadata.Resolution.StandardHeight);
+        BlorbImageScale scale = Assert.Single(metadata.Resolution.ImageScales);
+        Assert.Equal(17u, scale.PictureNumber);
+        Assert.Equal(new BlorbScaleRatio(1, 1), scale.Standard);
+        Assert.True(scale.Minimum.IsUnbounded);
+        Assert.Equal(new BlorbScaleRatio(2, 1), scale.Maximum);
+        BlorbResourceDescription description = Assert.Single(metadata.ResourceDescriptions);
+        Assert.Equal("Pict", description.Usage);
+        Assert.Equal(17u, description.Number);
+        Assert.Equal("Cover café", description.Text);
+        Assert.Same(description, metadata.FindDescription("Pict", 17));
+        Assert.Equal(17u, Assert.Single(metadata.AdaptivePalettePictures));
+        Assert.Collection(
+            metadata.SoundLoops,
+            loop =>
+            {
+                Assert.Equal(4u, loop.SoundNumber);
+                Assert.True(loop.Repeats);
+            },
+            loop =>
+            {
+                Assert.Equal(5u, loop.SoundNumber);
+                Assert.False(loop.Repeats);
+            });
+    }
+
+    [Theory]
+    [InlineData(16)]
+    [InlineData(32)]
+    public void ParsesPaletteMinimumColorDepth(byte depth)
+    {
+        BlorbFile parsed = BlorbFileCodec.Read(BuildBlorb([new ChunkDefinition("Plte", [depth])], []));
+
+        Assert.Equal(BlorbPaletteKind.MinimumColorDepth, parsed.Metadata.Palette!.Kind);
+        Assert.Equal(depth, parsed.Metadata.Palette.MinimumColorDepth);
+        Assert.Empty(parsed.Metadata.Palette.Colors);
+    }
+
+    [Fact]
+    public void DefaultsOptionalMetadataAndReleaseNumberWhenChunksAreAbsent()
+    {
+        BlorbMetadata metadata = BlorbFileCodec.Read(BuildBlorb([], [])).Metadata;
+
+        Assert.Null(metadata.Xml);
+        Assert.Null(metadata.GameIdentifier);
+        Assert.Equal((ushort)0, metadata.ReleaseNumber);
+        Assert.Null(metadata.Frontispiece);
+        Assert.Null(metadata.Palette);
+        Assert.Null(metadata.Resolution);
+        Assert.Empty(metadata.ResourceDescriptions);
+        Assert.Empty(metadata.AdaptivePalettePictures);
+        Assert.Empty(metadata.SoundLoops);
+    }
+
+    [Fact]
+    public void RejectsDuplicateOptionalSingletonChunks()
+    {
+        byte[] encoded = BuildBlorb(
+        [
+            new ChunkDefinition("IFmd", "<a/>"u8.ToArray()),
+            new ChunkDefinition("IFmd", "<b/>"u8.ToArray()),
+        ], []);
+
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(encoded));
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0xFF })]
+    [InlineData(new byte[] { (byte)'<' })]
+    public void RejectsInvalidUtf8OrMalformedIfmdXml(byte[] data)
+    {
+        byte[] encoded = BuildBlorb([new ChunkDefinition("IFmd", data)], []);
+
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(encoded));
+    }
+
+    [Fact]
+    public void RejectsIfmdDocumentTypeDeclarations()
+    {
+        byte[] encoded = BuildBlorb(
+            [new ChunkDefinition("IFmd", "<!DOCTYPE a><a/>"u8.ToArray())], []);
+
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(encoded));
+    }
+
+    [Fact]
+    public void RejectsMalformedReleaseIdentityAndFrontispieceChunks()
+    {
+        byte[] shortIdentity = BuildBlorb([new ChunkDefinition("IFhd", new byte[12])], []);
+        byte[] longRelease = BuildBlorb([new ChunkDefinition("RelN", [0, 1, 2])], []);
+        byte[] badFrontispieceLength = BuildBlorb([new ChunkDefinition("Fspc", [0, 0, 0])], []);
+        byte[] missingFrontispiece = BuildBlorb([new ChunkDefinition("Fspc", UInt32(5))], []);
+        byte[] rectangleFrontispiece = BuildBlorb(
+            [new ChunkDefinition("Rect", new byte[8]), new ChunkDefinition("Fspc", UInt32(5))],
+            [new ResourceDefinition("Pict", 5, 0)]);
+
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(shortIdentity));
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(longRelease));
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(badFrontispieceLength));
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(missingFrontispiece));
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(rectangleFrontispiece));
+    }
+
+    [Theory]
+    [InlineData(new byte[] { })]
+    [InlineData(new byte[] { 15 })]
+    [InlineData(new byte[] { 16, 17 })]
+    public void RejectsInvalidPaletteLengthsAndDepth(byte[] palette)
+    {
+        byte[] encoded = BuildBlorb([new ChunkDefinition("Plte", palette)], []);
+
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(encoded));
+    }
+
+    [Fact]
+    public void RejectsPaletteWithMoreThan256Colors()
+    {
+        byte[] encoded = BuildBlorb([new ChunkDefinition("Plte", new byte[771])], []);
+
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(encoded));
+    }
+
+    [Fact]
+    public void RejectsMalformedResolutionDimensionsEntriesAndRatios()
+    {
+        byte[] shortChunk = BuildBlorb([new ChunkDefinition("Reso", new byte[23])], []);
+        byte[] zeroStandard = BuildBlorb(
+            [new ChunkDefinition("PNG ", [0]), new ChunkDefinition("Reso", MakeResolution(1, 0, 100, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0))],
+            [new ResourceDefinition("Pict", 1, 0)]);
+        byte[] badRatio = BuildBlorb(
+            [new ChunkDefinition("PNG ", [0]), new ChunkDefinition("Reso", MakeResolution(1, 100, 100, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0))],
+            [new ResourceDefinition("Pict", 1, 0)]);
+        byte[] missingPicture = BuildBlorb(
+            [new ChunkDefinition("Reso", MakeResolution(7, 100, 100, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0))], []);
+
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(shortChunk));
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(zeroStandard));
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(badRatio));
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(missingPicture));
+    }
+
+    [Fact]
+    public void RejectsMalformedResourceDescriptionsAndZMachineTables()
+    {
+        byte[] shortDescriptionHeader = BuildBlorb([new ChunkDefinition("RDes", UInt32(1))], []);
+        byte[] invalidDescriptionUtf8 = BuildBlorb(
+            [new ChunkDefinition("PNG ", [0]), new ChunkDefinition("RDes", InvalidUtf8Description())],
+            [new ResourceDefinition("Pict", 1, 0)]);
+        byte[] badAdaptiveLength = BuildBlorb([new ChunkDefinition("APal", [0, 0, 0])], []);
+        byte[] missingAdaptivePicture = BuildBlorb([new ChunkDefinition("APal", UInt32(1))], []);
+        byte[] adaptivePaletteWithJpeg = BuildBlorb(
+            [new ChunkDefinition("JPEG", [1]), new ChunkDefinition("APal", [])],
+            [new ResourceDefinition("Pict", 1, 0)]);
+        byte[] badLoopLength = BuildBlorb([new ChunkDefinition("Loop", [0, 0, 0, 1])], []);
+        byte[] badLoopFlag = BuildBlorb(
+            [new ChunkDefinition("OGGV", [1]), new ChunkDefinition("Loop", UInt32Pair(2, 3))],
+            [new ResourceDefinition("Snd ", 2, 0)]);
+        byte[] duplicateDescriptions = BuildBlorb(
+            [
+                new ChunkDefinition("PNG ", [0]),
+                new ChunkDefinition("RDes", MakeDescriptions([("Pict", 1u, "first"), ("Pict", 1u, "second")])),
+            ],
+            [new ResourceDefinition("Pict", 1, 0)]);
+        byte[] missingSound = BuildBlorb(
+            [new ChunkDefinition("Loop", UInt32Pair(2, 0))], []);
+
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(shortDescriptionHeader));
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(invalidDescriptionUtf8));
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(badAdaptiveLength));
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(missingAdaptivePicture));
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(adaptivePaletteWithJpeg));
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(badLoopLength));
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(badLoopFlag));
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(duplicateDescriptions));
+        Assert.Throws<InvalidDataException>(() => BlorbFileCodec.Read(missingSound));
+    }
+
     private static byte[] BuildBlorb(IReadOnlyList<ChunkDefinition> chunks, IReadOnlyList<ResourceDefinition> resources)
     {
         int indexOffset = 12 + 8 + sizeof(uint) + resources.Count * 12;
@@ -276,6 +498,86 @@ public sealed class BlorbFileCodecTests
             offset += 12;
         }
 
+        return data;
+    }
+
+    private static byte[] MakeDescriptions(IReadOnlyList<(string Usage, uint Number, string Text)> entries)
+    {
+        using MemoryStream stream = new();
+        Span<byte> value = stackalloc byte[sizeof(uint)];
+        BinaryPrimitives.WriteUInt32BigEndian(value, checked((uint)entries.Count));
+        stream.Write(value);
+        foreach ((string usage, uint number, string text) in entries)
+        {
+            stream.Write(Encoding.ASCII.GetBytes(usage));
+            BinaryPrimitives.WriteUInt32BigEndian(value, number);
+            stream.Write(value);
+            byte[] textBytes = Encoding.UTF8.GetBytes(text);
+            BinaryPrimitives.WriteUInt32BigEndian(value, checked((uint)textBytes.Length));
+            stream.Write(value);
+            stream.Write(textBytes);
+        }
+
+        return stream.ToArray();
+    }
+
+    private static byte[] MakeResolution(uint pictureNumber, params uint[] values)
+    {
+        if (values.Length != 12)
+        {
+            throw new ArgumentException("A test Reso entry requires six dimensions and three ratios.", nameof(values));
+        }
+
+        byte[] data = new byte[24 + 28];
+        for (int i = 0; i < 6; i++)
+        {
+            BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(i * 4, sizeof(uint)), values[i]);
+        }
+
+        BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(24, sizeof(uint)), pictureNumber);
+        for (int i = 0; i < 6; i++)
+        {
+            BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(28 + i * 4, sizeof(uint)), values[i + 6]);
+        }
+
+        return data;
+    }
+
+    private static byte[] UInt32(uint value)
+    {
+        byte[] data = new byte[sizeof(uint)];
+        BinaryPrimitives.WriteUInt32BigEndian(data, value);
+        return data;
+    }
+
+    private static byte[] UInt32Pair(uint first, uint second)
+    {
+        byte[] data = new byte[sizeof(uint) * 2];
+        BinaryPrimitives.WriteUInt32BigEndian(data, first);
+        BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(sizeof(uint)), second);
+        return data;
+    }
+
+    private static byte[] UInt32Pairs(params (uint First, uint Second)[] values)
+    {
+        byte[] data = new byte[values.Length * sizeof(uint) * 2];
+        for (int i = 0; i < values.Length; i++)
+        {
+            BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(i * 8, sizeof(uint)), values[i].First);
+            BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(i * 8 + sizeof(uint), sizeof(uint)), values[i].Second);
+        }
+
+        return data;
+    }
+
+    private static byte[] InvalidUtf8Description()
+    {
+        byte[] data = new byte[17];
+        BinaryPrimitives.WriteUInt32BigEndian(data, 1);
+        "Pict"u8.CopyTo(data.AsSpan(4));
+        BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(8), 1);
+        BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(12), 1);
+        data[16] = 0xFF;
         return data;
     }
 

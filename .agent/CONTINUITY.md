@@ -8,6 +8,9 @@
 - 2026-10-16T03:49Z [CODE] Use .NET 10, Avalonia, a shared interpreter core, CLI, and xUnit.
 
 ## [PROGRESS]
+- 2026-10-16T21:13Z [USER] User confirmed PR #26 merged; fetched `origin/main` contains merge commit `5e0654f`. Task 26 started on `feature/26-blorb-metadata`.
+- 2026-10-16T21:18Z [CODE] Added parsed Blorb metadata and Z-machine hints: IFmd, AUTH/(c)/ANNO, IFhd, RelN, RDes, Fspc, Plte, Reso, APal, and Loop. Parser validates chunk layouts, text encoding, singleton rules, references, ratio constraints, and Z3 sound repeat flags. Tests and final review pending.
+- 2026-10-16T21:21Z [TOOL] Task 26 formatter verification passed, Release build succeeded with 0 warnings/errors, and all 276 xUnit tests passed. Final diff review and PR publication pending.
 - 2026-10-16T21:07Z [USER] User confirmed PR #25 merged; fetched `origin/main` contains merge commit `d6b663c`. Task 25 started on `feature/25-blorb-parser`.
 - 2026-10-16T21:09Z [CODE] Added a standalone IFRS parser with validated FORM/chunk bounds and padding, leading/single RIdx enforcement, resource-offset resolution, Exec numbering/count checks, and ZCOD extraction. Added generated parser tests and documented that front-end loading remains raw-story-only; verification and PR pending.
 - 2026-10-16T21:11Z [TOOL] Task 25 review and verification passed: format check, Release build with 0 warnings/errors, all 261 xUnit tests, and `git diff --check`. Commit and PR publication pending.

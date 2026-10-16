@@ -44,7 +44,7 @@ Each checkbox is a separate task and pull request. The explicit `Task N` labels 
 ## Later phase: Blorb
 
 - [x] **Task 25:** Parse Blorb IFF/IFRS structure, resource index, chunk offsets, padding, and Z-code executable resources.
-- [ ] **Task 26:** Add Blorb resource lookup and support applicable metadata, descriptions, frontispiece, palette, resolution, and Z-machine-specific chunks.
+- [x] **Task 26:** Add Blorb resource lookup and support applicable metadata, descriptions, frontispiece, palette, resolution, and Z-machine-specific chunks.
 - [ ] **Task 27:** Add applicable Blorb picture and sound resource decoding/playback, with tests for supported formats and malformed resources.
 
 ## Later phase: Z-machine versions 4–8
