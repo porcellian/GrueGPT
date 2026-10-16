@@ -1,0 +1,36 @@
+# Visual Studio / .NET
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+artifacts/
+TestResults/
+*.trx
+*.coverage
+
+# Rider / VS Code
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+
+# macOS
+.DS_Store
+._*
+
+# Local saves and runtime logs
+*.qzl
+*.sav
+*.log
+
+# Story files are copyrighted content and stay local by default.
+# Add an individual exception only for a story the user explicitly authorizes
+# for tracking after its redistribution terms are confirmed.
+/stories/*

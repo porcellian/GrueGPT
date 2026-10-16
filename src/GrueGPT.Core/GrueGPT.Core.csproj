@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>GrueGPT.Core</AssemblyName>
+    <RootNamespace>GrueGPT.Core</RootNamespace>
+  </PropertyGroup>
+</Project>

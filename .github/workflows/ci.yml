@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    env:
+      AVALONIA_TELEMETRY_OPTOUT: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Restore
+        run: dotnet restore GrueGPT.sln
+      - name: Check formatting
+        run: dotnet format GrueGPT.sln --verify-no-changes --no-restore
+      - name: Build
+        run: dotnet build GrueGPT.sln --no-restore --configuration Release
+      - name: Test
+        run: dotnet test GrueGPT.sln --no-build --configuration Release
