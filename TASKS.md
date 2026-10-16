@@ -10,7 +10,7 @@ Each checkbox is a separate task and pull request. The explicit `Task N` labels 
 
 ## Z-machine version 3 interpreter
 
-- [ ] **Task 4:** Define the interpreter core's story/session and input/output boundaries so the desktop app and CLI use the same engine.
+- [x] **Task 4:** Define the interpreter core's story/session and input/output boundaries so the desktop app and CLI use the same engine.
 - [ ] **Task 5:** Load raw Z3 story files; validate file size, version, header fields, checksum, and initial execution address with clear errors.
 - [ ] **Task 6:** Implement the Z3 memory map, dynamic/static memory rules, byte/word access, packed-address calculations, and header flags.
 - [ ] **Task 7:** Decode Z-machine text, alphabets, abbreviations, ZSCII escapes, and character output according to the Z3 rules.

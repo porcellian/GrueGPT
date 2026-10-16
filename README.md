@@ -12,6 +12,13 @@ GrueGPT is a C# Z-machine interpreter project. Its first playable milestone targ
 - `specs` and `reference` contain the project specifications and initial GUI reference.
 - `stories` is for local playtesting. Story files are ignored by Git unless an individual open-source file is explicitly authorized for tracking.
 
+## Interpreter boundary
+
+The Core project defines `IStorySession` and `IInterpreterIO` so a story session
+can use the same asynchronous line-input, story-text, and status-update contract
+with either the CLI or desktop host. The Core has no console or Avalonia UI
+dependency; each front end owns input editing, rendering, and scrolling.
+
 ## Supported platforms
 
 The initial desktop target is macOS and Windows. Linux is not a supported target at this time and is not included in CI.
