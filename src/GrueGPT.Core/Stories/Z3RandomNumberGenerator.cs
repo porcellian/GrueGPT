@@ -5,6 +5,9 @@ public sealed class Z3RandomNumberGenerator
 {
     private Random _random = new();
 
+    /// <summary>Returns the generator to random mode, as at the start of a story.</summary>
+    public void Reset() => _random = new Random();
+
     /// <summary>Returns a value in 1..range, or reseeds and returns zero.</summary>
     public ushort Next(ushort rangeOperand)
     {

@@ -11,7 +11,12 @@ public sealed class Z3OpcodeExecutor
     private readonly Z3ObjectTable _objects;
     private readonly Z3TextDecoder _textDecoder;
     private readonly IInterpreterIO _io;
+    private readonly IZ3StreamIO? _streamIO;
     private readonly Z3RandomNumberGenerator _random;
+    private readonly Stack<Z3MemoryOutputFrame> _memoryOutputStreams = new();
+    private bool _screenOutputSelected = true;
+    private bool _recordCommands;
+    private byte _inputStream;
     private bool _halted;
 
     public Z3OpcodeExecutor(
@@ -23,10 +28,17 @@ public sealed class Z3OpcodeExecutor
         ArgumentNullException.ThrowIfNull(io);
         _state = state;
         _io = io;
+        _streamIO = io as IZ3StreamIO;
         _decoder = new Z3InstructionDecoder(state);
         _objects = new Z3ObjectTable(state.Memory, state.Header.ObjectTableAddress);
         _textDecoder = new Z3TextDecoder(state.Memory, state.Header.AbbreviationsAddress);
         _random = randomNumberGenerator ?? new Z3RandomNumberGenerator();
+
+        if (_streamIO is null)
+        {
+            byte flags2LowByte = _state.Memory.ReadByte(Z3Memory.Flags2Address + 1);
+            _state.Memory.WriteByte(Z3Memory.Flags2Address + 1, (byte)(flags2LowByte & ~0x01));
+        }
     }
 
     public bool IsHalted => _halted;
@@ -40,6 +52,7 @@ public sealed class Z3OpcodeExecutor
     /// <summary>Decodes and executes one instruction; returns false after quit.</summary>
     public async ValueTask<bool> ExecuteNextAsync(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (_halted)
         {
             return false;
@@ -53,8 +66,18 @@ public sealed class Z3OpcodeExecutor
     /// <summary>Executes instructions until quit or an opcode owned by a later task is reached.</summary>
     public async ValueTask RunAsync(CancellationToken cancellationToken = default)
     {
-        while (await ExecuteNextAsync(cancellationToken).ConfigureAwait(false))
+        try
         {
+            while (await ExecuteNextAsync(cancellationToken).ConfigureAwait(false))
+            {
+            }
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            await _io.ReportErrorAsync(
+                $"Story execution stopped at 0x{_state.ProgramCounter:X4}: {exception.Message}",
+                cancellationToken).ConfigureAwait(false);
+            throw;
         }
     }
 
@@ -104,7 +127,8 @@ public sealed class Z3OpcodeExecutor
             case 6:
                 throw DeferredOpcode("restore", "task 17");
             case 7:
-                throw DeferredOpcode("restart", "task 12");
+                Restart();
+                break;
             case 8:
                 _state.ReturnFromRoutine(_state.PopStack());
                 break;
@@ -402,7 +426,8 @@ public sealed class Z3OpcodeExecutor
                     GetValue(instruction, 2));
                 break;
             case 4:
-                throw DeferredOpcode("read", "task 12");
+                await ReadLineAsync(instruction, cancellationToken).ConfigureAwait(false);
+                break;
             case 5:
                 await WriteAsync(DecodeOutputCharacter(GetValue(instruction, 0)), cancellationToken).ConfigureAwait(false);
                 break;
@@ -433,9 +458,11 @@ public sealed class Z3OpcodeExecutor
                     break;
                 }
             case 19:
-                throw DeferredOpcode("output_stream", "task 12");
+                SelectOutputStream(instruction);
+                break;
             case 20:
-                throw DeferredOpcode("input_stream", "task 12");
+                SelectInputStream(GetValue(instruction, 0));
+                break;
             case 21:
                 break;
             default:
@@ -526,6 +553,192 @@ public sealed class Z3OpcodeExecutor
         throw new InvalidDataException($"ZSCII code {value} is not defined for Version 3 output.");
     }
 
+    private async ValueTask ReadLineAsync(Z3DecodedInstruction instruction, CancellationToken cancellationToken)
+    {
+        ushort textBufferAddress = GetValue(instruction, 0);
+        ushort parseBufferAddress = GetValue(instruction, 1);
+        int maximumCharacters = _state.Memory.ReadByte(textBufferAddress);
+        if (maximumCharacters < 1)
+        {
+            throw new InvalidDataException("A Version 3 text buffer must have room for at least one character and its terminator.");
+        }
+
+        ValidateInputBuffer(textBufferAddress, maximumCharacters + 2, "text");
+        int maximumWords = _state.Memory.ReadByte(parseBufferAddress);
+        if (maximumWords < 1)
+        {
+            throw new InvalidDataException("A Version 3 parse buffer must have room for at least one token.");
+        }
+
+        ValidateInputBuffer(parseBufferAddress, 2 + (maximumWords * 4), "parse");
+        await UpdateStatusAsync(cancellationToken).ConfigureAwait(false);
+
+        string? inputLine = _inputStream == 0
+            ? await _io.ReadLineAsync(cancellationToken).ConfigureAwait(false)
+            : await GetStreamIO().ReadPlaybackCommandAsync(cancellationToken).ConfigureAwait(false);
+        if (inputLine is null)
+        {
+            _halted = true;
+            return;
+        }
+
+        string line = inputLine.TrimEnd('\r', '\n');
+        if (line.Length > maximumCharacters)
+        {
+            line = line[..maximumCharacters];
+        }
+
+        await EchoInputLineAsync(line, cancellationToken).ConfigureAwait(false);
+        if (_recordCommands)
+        {
+            await GetStreamIO().WriteRecordedCommandAsync(line, cancellationToken).ConfigureAwait(false);
+        }
+
+        for (int index = 0; index < line.Length; index++)
+        {
+            char lowerCaseCharacter = char.ToLowerInvariant(line[index]);
+            _state.Memory.WriteByte(
+                textBufferAddress + 1 + index,
+                Z3TextDecoder.ToZsciiCharacter(lowerCaseCharacter));
+        }
+
+        _state.Memory.WriteByte(textBufferAddress + 1 + line.Length, 0);
+        _ = new Z3Tokenizer(_state.Memory, _state.Header.DictionaryAddress)
+            .TokenizeTextBuffer(textBufferAddress, parseBufferAddress);
+    }
+
+    private void ValidateInputBuffer(ushort address, int length, string bufferName)
+    {
+        if (length < (bufferName == "text" ? 3 : 6)
+            || address < Z3StoryLoader.HeaderSize
+            || address > _state.Memory.StaticMemoryBase - length
+            || address + length > _state.Memory.Length)
+        {
+            throw new InvalidDataException($"The Version 3 {bufferName} buffer is too small or is outside dynamic memory.");
+        }
+    }
+
+    private async ValueTask EchoInputLineAsync(string line, CancellationToken cancellationToken)
+    {
+        string text = $"{line}\n";
+        if (_screenOutputSelected)
+        {
+            await _io.WriteTextAsync(text, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (IsTranscriptSelected)
+        {
+            await GetStreamIO().WriteTranscriptAsync(text, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private void SelectInputStream(ushort encodedStream)
+    {
+        short stream = AsSigned(encodedStream);
+        if (stream is not (0 or 1))
+        {
+            throw new InvalidOperationException($"Version 3 input stream {stream} is not supported.");
+        }
+
+        if (stream == 1)
+        {
+            _ = GetStreamIO();
+        }
+
+        _inputStream = (byte)stream;
+    }
+
+    private void SelectOutputStream(Z3DecodedInstruction instruction)
+    {
+        short selectedStream = AsSigned(GetValue(instruction, 0));
+        if (selectedStream == 0)
+        {
+            return;
+        }
+
+        bool enable = selectedStream > 0;
+        int streamNumber = Math.Abs((int)selectedStream);
+        switch (streamNumber)
+        {
+            case 1:
+                _screenOutputSelected = enable;
+                break;
+            case 2:
+                if (enable)
+                {
+                    _ = GetStreamIO();
+                }
+
+                byte flags2LowByte = _state.Memory.ReadByte(Z3Memory.Flags2Address + 1);
+                _state.Memory.WriteByte(
+                    Z3Memory.Flags2Address + 1,
+                    enable ? (byte)(flags2LowByte | 0x01) : (byte)(flags2LowByte & ~0x01));
+                break;
+            case 3:
+                if (enable)
+                {
+                    if (instruction.Operands.Count < 2)
+                    {
+                        throw new InvalidDataException("Selecting Version 3 output stream 3 requires a table address.");
+                    }
+
+                    if (_memoryOutputStreams.Count == 16)
+                    {
+                        throw new InvalidOperationException("Version 3 output stream 3 supports at most 16 nested tables.");
+                    }
+
+                    int tableAddress = GetValue(instruction, 1);
+                    if (tableAddress < Z3StoryLoader.HeaderSize
+                        || tableAddress >= _state.Memory.StaticMemoryBase - sizeof(ushort))
+                    {
+                        throw new InvalidDataException("A Version 3 output stream 3 table must begin where its count word fits in dynamic memory.");
+                    }
+
+                    _memoryOutputStreams.Push(new Z3MemoryOutputFrame(tableAddress));
+                }
+                else if (_memoryOutputStreams.TryPop(out Z3MemoryOutputFrame? frame))
+                {
+                    _state.Memory.WriteWord(frame.TableAddress, unchecked((ushort)frame.CharacterCount));
+                }
+
+                break;
+            case 4:
+                if (enable)
+                {
+                    _ = GetStreamIO();
+                }
+
+                _recordCommands = enable;
+                break;
+            default:
+                throw new InvalidOperationException($"Version 3 output stream {selectedStream} is not supported.");
+        }
+    }
+
+    private bool IsTranscriptSelected => (_state.Memory.ReadByte(Z3Memory.Flags2Address + 1) & 0x01) != 0;
+
+    private IZ3StreamIO GetStreamIO() => _streamIO
+        ?? throw new NotSupportedException("This host does not provide transcript or command-file streams.");
+
+    private void Restart()
+    {
+        _state.Restart();
+        _random.Reset();
+        _screenOutputSelected = true;
+        _recordCommands = false;
+        _inputStream = 0;
+        _memoryOutputStreams.Clear();
+        if (_streamIO is null)
+        {
+            byte flags2LowByte = _state.Memory.ReadByte(Z3Memory.Flags2Address + 1);
+            _state.Memory.WriteByte(Z3Memory.Flags2Address + 1, (byte)(flags2LowByte & ~0x01));
+        }
+
+        CurrentWindow = 0;
+        UpperWindowHeight = 0;
+        _halted = false;
+    }
+
     private async ValueTask UpdateStatusAsync(CancellationToken cancellationToken)
     {
         ushort objectNumber = _state.Memory.ReadWord(_state.Header.GlobalVariablesAddress);
@@ -556,14 +769,44 @@ public sealed class Z3OpcodeExecutor
         return unchecked((ushort)checksum) == _state.Header.Checksum;
     }
 
-    private async ValueTask WriteAsync(string text, CancellationToken cancellationToken) =>
-        await _io.WriteTextAsync(text, cancellationToken).ConfigureAwait(false);
+    private async ValueTask WriteAsync(string text, CancellationToken cancellationToken)
+    {
+        if (_memoryOutputStreams.TryPeek(out Z3MemoryOutputFrame? memoryOutput))
+        {
+            foreach (char character in text)
+            {
+                int address = checked(memoryOutput.TableAddress + sizeof(ushort) + memoryOutput.CharacterCount);
+                _state.Memory.WriteByte(address, Z3TextDecoder.ToZsciiCharacter(character));
+                memoryOutput.CharacterCount++;
+            }
+
+            return;
+        }
+
+        if (_screenOutputSelected)
+        {
+            await _io.WriteTextAsync(text, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (IsTranscriptSelected)
+        {
+            await GetStreamIO().WriteTranscriptAsync(text, cancellationToken).ConfigureAwait(false);
+        }
+
+    }
 
     private static NotSupportedException DeferredOpcode(string name, string task) =>
         new($"The Z-machine {name} opcode is implemented in {task}.");
 
     private static InvalidDataException UnknownOpcode(Z3DecodedInstruction instruction) =>
         new($"Opcode {instruction.Form}:{instruction.OpcodeNumber} is not a legal Version 3 instruction.");
+
+    private sealed class Z3MemoryOutputFrame(int tableAddress)
+    {
+        public int TableAddress { get; } = tableAddress;
+
+        public int CharacterCount { get; set; }
+    }
 }
 
 internal static class Z3OperandConversions

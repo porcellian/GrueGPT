@@ -19,6 +19,16 @@ can use the same asynchronous line-input, story-text, and status-update contract
 with either the CLI or desktop host. The Core has no console or Avalonia UI
 dependency; each front end owns input editing, rendering, and scrolling.
 
+The Version 3 `read` opcode requests a complete line from the host, updates the
+story's text and parse buffers, and echoes the completed command through the
+currently selected output streams. Hosts own interactive editing and key
+handling. Optional `IZ3StreamIO` lets hosts provide transcript and command-file
+streams; selecting those streams without that capability produces a reported
+runtime error. Memory output stream 3 is handled directly by Core, including
+nested tables and stream suppression. Restart restores story memory, stack,
+program counter, random mode, and output selection while retaining the Version
+3 transcript and fixed-pitch flags.
+
 `Z3StoryLoader` reads a raw story from a readable stream, validates its v3
 header, memory ranges, declared length, and available checksum, then returns a
 `LoadedStory` containing the logical story bytes and parsed `StoryHeader`.
@@ -62,11 +72,10 @@ jumps; and conditional branches.
 `Z3OpcodeExecutor` implements the Version 3 arithmetic and comparison
 instructions, branches and jumps, routine calls and returns, object/property
 operations, packed text and character/number output, random numbers, memory
-reads and writes, stack operations, status updates, and verification. It tracks
-the two Version 3 output windows and accepts sound-effect instructions without
-requiring a sound device. Line input, restart, input/output stream management,
-and transcript behavior are implemented in the following task. Save/restore
-remain part of the Quetzal tasks.
+reads and writes, stack operations, status updates, verification, line input,
+restart, and output stream management. It tracks the two Version 3 output
+windows and accepts sound-effect instructions without requiring a sound device.
+Quetzal save/restore remain part of the later save-file tasks.
 
 ## Supported platforms
 

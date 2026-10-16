@@ -60,6 +60,23 @@ public sealed class Z3TextDecoder
         return '?';
     }
 
+    /// <summary>Maps a Unicode character to Version 3 ZSCII, replacing unsupported characters with '?'.</summary>
+    public static byte ToZsciiCharacter(char character)
+    {
+        if (character is '\r' or '\n')
+        {
+            return 13;
+        }
+
+        if (character is >= (char)32 and <= (char)126)
+        {
+            return (byte)character;
+        }
+
+        int extraCharacterIndex = Array.IndexOf(DefaultExtraCharacters, character);
+        return extraCharacterIndex >= 0 ? (byte)(155 + extraCharacterIndex) : (byte)'?';
+    }
+
     private string DecodeAt(int byteAddress, bool allowAbbreviations)
     {
         System.Text.StringBuilder output = new();
