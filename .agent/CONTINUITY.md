@@ -8,6 +8,9 @@
 - 2026-10-16T03:49Z [CODE] Use .NET 10, Avalonia, a shared interpreter core, CLI, and xUnit.
 
 ## [PROGRESS]
+- 2026-10-16T21:03Z [USER] User confirmed PR #24 merged; fetched `origin/main` contains merge commit `e9e6f81`. Task 24 started on `feature/24-release-documentation`.
+- 2026-10-16T21:04Z [CODE] README now documents Version 3 support boundaries, front-end limitations, Quetzal handling, local-story policy, and self-contained macOS/Windows publish commands; Task 24 checkbox is complete pending verification and PR.
+- 2026-10-16T21:05Z [TOOL] Task 24 docs review passed; format verification passed, Release build succeeded with 0 warnings/errors, and all 241 xUnit tests passed. Commit and PR publication pending.
 - 2026-10-16T20:51Z [USER] User confirmed PR #23 merged; fetched `origin/main` contains merge commit `4548244`. Task 23 started on `feature/23-local-zork-regression`.
 - 2026-10-16T20:56Z [TOOL] The local Zork transcript exposed an indirect-variable decoding rejection. `GetVariableNumber` now accepts small-constant references; a generated opcode test covers the case, and the local Zork script passes. PowerShell is unavailable locally; its script's absent-story path is therefore not yet run here.
 - 2026-10-16T20:57Z [TOOL] Task 23 verification passed: bash syntax check, local Zork transcript, absent-story skip, ignored-story check, all 241 xUnit tests, Release build with 0 warnings/errors, format verification, and `git diff --check`. PowerShell remains unexecuted locally because no PowerShell host is installed.
