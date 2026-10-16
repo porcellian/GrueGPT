@@ -108,3 +108,4 @@
 - 2026-10-16T19:58Z [TOOL] Task 19 Release build succeeded with 0 warnings/errors; xUnit passed 208 tests; formatting verification passed.
 - 2026-10-16T20:02Z [TOOL] Task 19 local commit `434e9b8` was pushed on `feature/19-desktop-interaction`; PR #20 is open at `https://github.com/porcellian/GrueGPT/pull/20` for manual merge.
 - 2026-10-16T20:22Z [TOOL] PR #20 macOS format follow-up fully qualifies `AvaloniaXamlLoader` in `MainWindow.axaml.cs` to avoid IDE0005 on its using directive; formatter verification passed, Release build passed with 0 warnings/errors, all 208 xUnit tests passed, and `git diff --check` passed. Fix commit and PR update pending.
+- 2026-10-16T20:24Z [TOOL] Supersedes the pending publication status above: fix commit `d56713b` was pushed to PR #20 as head `e39f50f` after reconciling a remote merge update while preserving the Task 19 tree; PR #20 remains open and macOS/Windows CI are pending.
