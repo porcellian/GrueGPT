@@ -41,6 +41,7 @@
 - 2026-10-16T18:05Z [USER] User confirmed PR #14 merged; GitHub main is merge commit `d297646`, whose tree matches the local Task 13 tree. Task 14 started on `feature/14-iff-ifzs-framing`.
 - 2026-10-16T18:15Z [TOOL] Task 14 is implemented and verified locally; commit and PR publication are pending. Apple Git HTTPS helper remains unusable, so use GitHub's Git Data API if it still crashes.
 - 2026-10-16T18:16Z [TOOL] Supersedes the 18:15Z pending status: local commit `d6727a9` and GitHub API commit `0f79978` contain the same Task 14 tree on `feature/14-iff-ifzs-framing`; PR #15 is open at `https://github.com/porcellian/GrueGPT/pull/15` for manual merge. Apple Git HTTPS remains broken, and local/remote commit histories differ.
+- 2026-10-16T18:22Z [USER] User confirmed PR #15 merged; GitHub main is merge commit `6dc4eda`, whose tree matches the local Task 14 tree. Task 15 started on `feature/15-quetzal-memory-chunks`.
 
 ## [DISCOVERIES]
 - 2026-10-16T16:07Z [CODE] Version 3 dictionaries use 4-byte encoded words padded to six Z-characters; negative entry counts indicate an unsorted user dictionary. Parse entries store dictionary address, token length, and one-based text-buffer position.
@@ -55,6 +56,7 @@
 - 2026-10-16T15:06Z [TOOL] Version 3 uses the default A0/A1/A2 alphabets; A2 z-characters 6 and 7 are the ZSCII escape and newline, so the alphabet's stored positions must retain placeholders for both.
 - 2026-10-16T15:23Z [TOOL] Instruction forms are distinguished by the top two bits: `$00–$7F` long, `$80–$BF` short, and `$C0–$FF` variable. Variable zero pops for value reads and pushes for result stores; indirect operations inspect or replace the existing stack top.
 - 2026-10-16T18:15Z [CODE] IFF identifiers must be validated from raw bytes before ASCII decoding; .NET ASCII replacement fallback can turn non-ASCII bytes into printable `?`. IFZS framing uses exact FORM bounds, big-endian chunk lengths, and required zero padding for odd data.
+- 2026-10-16T18:24Z [CODE] CMem stores XOR differences; a zero run encodes 1–256 unchanged bytes. Decoding may stop early and fills the remaining tail from original memory, but rejects incomplete runs and any output beyond dynamic memory. UMem requires exact length.
 
 ## [OUTCOMES]
 - 2026-10-16T16:24Z [CODE] Task 11 adds `Z3OpcodeExecutor` and Version 3 random handling for legal opcode families, status/time mode, and checksum verification; task 12's checklist no longer includes quit/verify.
@@ -84,3 +86,5 @@
 - 2026-10-16T15:23Z [TOOL] Task 8 Release build passed with 0 warnings/errors; xUnit passed 75 tests; `dotnet format --verify-no-changes` passed.
 - 2026-10-16T18:15Z [CODE] Task 14 adds `QuetzalFileCodec` for IFZS FORM framing and ordered chunk containers; unknown and duplicate chunks are retained. README and checklist updated; semantic Quetzal chunks remain in tasks 15–17.
 - 2026-10-16T18:15Z [TOOL] Task 14 Release build passed with 0 warnings/errors; xUnit passed 158 tests; format verification and `git diff --check` passed.
+- 2026-10-16T18:24Z [CODE] Task 15 adds IFhd read/write with forward-compatible extension retention, CMem XOR/run-length encode/decode, and exact-length UMem read/write. README and checklist updated; Z3 SAVE/RESTORE integration remains Task 17.
+- 2026-10-16T18:24Z [TOOL] Task 15 Release build passed with 0 warnings/errors; xUnit passed 181 tests; format verification and `git diff --check` passed.
