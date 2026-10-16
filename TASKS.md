@@ -16,7 +16,7 @@ Each checkbox is a separate task and pull request. The explicit `Task N` labels 
 - [x] **Task 7:** Decode Z-machine text, alphabets, abbreviations, ZSCII escapes, and character output according to the Z3 rules.
 - [x] **Task 8:** Implement instruction decoding, operand forms, variable access, stores, branches, jumps, routine calls, returns, and stack frames.
 - [x] **Task 9:** Implement the Z3 object tree, attributes, property defaults, property lookup/update, and object movement operations.
-- [ ] **Task 10:** Implement the Z3 dictionary format, tokenization, input-buffer layout, and parser-buffer updates.
+- [x] **Task 10:** Implement the Z3 dictionary format, tokenization, input-buffer layout, and parser-buffer updates.
 - [ ] **Task 11:** Implement the legal Z3 opcode set, including arithmetic, comparisons, control flow, object/property, text, random, memory/table, and call operations.
 - [ ] **Task 12:** Implement Z3 line input, command editing, terminating characters, output streams, transcript behavior, restart, quit, verify, and error reporting.
 - [ ] **Task 13:** Implement the Z3 screen model, status line (location, score, moves), colors, fixed-width font, prompt placement, and upward-scrolling text.

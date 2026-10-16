@@ -29,8 +29,11 @@
 - 2026-10-16T15:27Z [TOOL] Task 8 commit `7c3d357` is pushed on `feature/8-z3-instruction-execution`; PR #9 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/9`.
 - 2026-10-16T15:47Z [USER] User confirmed PR #9 merged; fetched `origin/main` advanced to `5050f79`, and task 9 started on `feature/9-z3-objects-properties` (supersedes the PR #9 open status above).
 - 2026-10-16T15:57Z [TOOL] Task 9 commit `a3bb2f7` was pushed on `feature/9-z3-objects-properties`; PR #10 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/10`.
+- 2026-10-16T16:07Z [USER] User confirmed PR #10 merged; fetched `origin/main` advanced to `02065c8`, and task 10 started on `feature/10-z3-dictionary-input-buffer` (supersedes the PR #10 open status above).
+- 2026-10-16T16:07Z [TOOL] Task 10 commit `10cc308` was pushed on `feature/10-z3-dictionary-input-buffer`; PR #11 is open for manual merge at `https://github.com/porcellian/GrueGPT/pull/11`.
 
 ## [DISCOVERIES]
+- 2026-10-16T16:07Z [CODE] Version 3 dictionaries use 4-byte encoded words padded to six Z-characters; negative entry counts indicate an unsorted user dictionary. Parse entries store dictionary address, token length, and one-based text-buffer position.
 - 2026-10-16T15:47Z [CODE] Version 3 property headers encode lengths 1–8 in their upper three bits and property numbers 1–31 in their lower five; attributes are stored most-significant-bit first. Property lists descend by property number.
 - 2026-10-16T03:49Z [TOOL] Local .NET SDK is 10.0.400.
 - 2026-10-16T05:05Z [TOOL] xUnit and Roslyn format checks require elevated execution in this sandbox because their local socket/pipe setup is blocked; both passed when rerun elevated.
@@ -40,6 +43,8 @@
 - 2026-10-16T15:23Z [TOOL] Instruction forms are distinguished by the top two bits: `$00–$7F` long, `$80–$BF` short, and `$C0–$FF` variable. Variable zero pops for value reads and pushes for result stores; indirect operations inspect or replace the existing stack top.
 
 ## [OUTCOMES]
+- 2026-10-16T16:07Z [CODE] Task 10 adds `Z3Dictionary` and `Z3Tokenizer` for Version 3 headers, dictionary ordering/search, six-Z-character case-folded encoding, text-buffer splitting, and bounded parse-buffer updates; README and checklist were updated.
+- 2026-10-16T16:07Z [TOOL] Task 10 Release build succeeded with 0 warnings/errors; xUnit passed 96 tests; `dotnet format --verify-no-changes` and `git diff --check` passed.
 - 2026-10-16T15:47Z [CODE] Task 9 adds `Z3ObjectTable` for object links, attributes, defaults, property lookup/length/value updates, and remove/insert operations; README and checklist were updated.
 - 2026-10-16T15:47Z [TOOL] Task 9 Release build succeeded with 0 warnings/errors; xUnit passed 84 tests; `dotnet format --verify-no-changes` and `git diff --check` passed.
 - 2026-10-16T04:03Z [TOOL] Foundation build succeeded with 0 warnings/errors; xUnit passed 1 test; `dotnet format --verify-no-changes` passed. Linux is not in CI.
