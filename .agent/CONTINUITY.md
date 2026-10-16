@@ -107,3 +107,4 @@
 - 2026-10-16T19:58Z [CODE] Task 19 connects Avalonia file pickers, v3 story loading, keyboard line input, host Quetzal save/load, transactional save replacement, and dismissible runtime/load errors. Host saves taken during input resume by repeating the pending `read` instruction.
 - 2026-10-16T19:58Z [TOOL] Task 19 Release build succeeded with 0 warnings/errors; xUnit passed 208 tests; formatting verification passed.
 - 2026-10-16T20:02Z [TOOL] Task 19 local commit `434e9b8` was pushed on `feature/19-desktop-interaction`; PR #20 is open at `https://github.com/porcellian/GrueGPT/pull/20` for manual merge.
+- 2026-10-16T20:22Z [TOOL] PR #20 macOS format follow-up fully qualifies `AvaloniaXamlLoader` in `MainWindow.axaml.cs` to avoid IDE0005 on its using directive; formatter verification passed, Release build passed with 0 warnings/errors, all 208 xUnit tests passed, and `git diff --check` passed. Fix commit and PR update pending.

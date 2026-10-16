@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -43,7 +42,7 @@ public sealed partial class MainWindow : Window, IInterpreterIO, IZ3ScreenIO, IZ
 
     public MainWindow()
     {
-        AvaloniaXamlLoader.Load(this);
+        Avalonia.Markup.Xaml.AvaloniaXamlLoader.Load(this);
         _statusText = this.FindControl<TextBlock>("StatusText")!;
         _playArea = this.FindControl<Border>("PlayArea")!;
         _screenText = this.FindControl<TextBlock>("ScreenText")!;
