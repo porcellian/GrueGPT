@@ -92,3 +92,4 @@
 - 2026-10-16T18:32Z [USER] User confirmed PR #16 merged; GitHub main is merge commit `4369775`, with tree matching local Task 15. Task 16 started on `feature/16-quetzal-stks`.
 - 2026-10-16T18:38Z [CODE] Task 16 adds Quetzal `Stks` frame state and codec, including dummy frame, 24-bit return PCs, flags, argument masks, locals, per-frame stacks, and execution-state snapshot/restore. README and checklist updated; opcode/UI save integration remains Task 17.
 - 2026-10-16T18:39Z [TOOL] Task 16 Release build succeeded with 0 warnings/errors; xUnit passed 194 tests; formatting verification and `git diff --check` passed.
+- 2026-10-16T18:53Z [TOOL] Local commit `0ba0a97` and GitHub API commit `145938c` contain the same Task 16 tree; PR #17 is open at `https://github.com/porcellian/GrueGPT/pull/17` for manual merge. Apple Git HTTPS still crashes.
