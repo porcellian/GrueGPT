@@ -49,7 +49,7 @@ Each checkbox is a separate task and pull request. Completed task IDs are stable
 
 ## Z3 completion and regression
 
-- [x] **Task 28:** Complete Zork I with the highest achievable score; fix interpreter issues found during play, add optional opcode tracing, and publish a concise step-by-step PDF walkthrough with a complete trace from a clean winning run. Keep story and reference files local.
+- [x] **Task 28:** Complete Zork I with the highest achievable score; fix interpreter issues found during play, add optional opcode tracing, and publish a concise step-by-step PDF walkthrough listing every unique opcode/mnemonic combination encountered in a clean winning run, with instruction form recorded. Keep story and reference files local.
 
 ## Later phase: Z-machine versions 4–8
 
