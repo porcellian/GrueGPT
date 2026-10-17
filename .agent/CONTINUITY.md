@@ -8,6 +8,11 @@
 - 2026-10-16T03:49Z [CODE] Use .NET 10, Avalonia, a shared interpreter core, CLI, and xUnit.
 
 ## [PROGRESS]
+- 2026-10-17T01:27Z [CODE] Task 28 adds optional instruction tracing to the executor and CLI (`--trace` CSV), a CLI `--seed` for repeatable combat, and correct mnemonics for 1-based 2OP encodings. README and `TASKS.md` updated; branch `feature/28-zork1-walkthrough`.
+- 2026-10-17T01:27Z [TOOL] Fresh local Zork I replay with seed 1 completed without death at 350/350 in 413 moves; the final map was revealed. The trace has 496,918 instructions. Full xUnit passed 294 tests, Release build had 0 warnings/errors, and format verification passed. PDF render/trace verification passed; commit and PR publication pending.
+- 2026-10-17T01:40Z [TOOL] Task 28 commit `e86cd41` is represented on GitHub branch `feature/28-zork1-walkthrough` by commit `50ffec3` with an identical tree; PR #29 is open at `https://github.com/porcellian/GrueGPT/pull/29` for manual merge. Git transport push returned HTTP 400, so the branch was published through Git Data API.
+- 2026-10-17T01:41Z [USER] Clarified Task 28's walkthrough must list each unique opcode/mnemonic combination, recording instruction form.
+- 2026-10-17T01:41Z [TOOL] Supersedes the prior per-occurrence PDF appendix: fresh seed-1 replay again completed at 350/350 with no deaths, ending after reading the map at move 413. Its 496,918 instruction occurrences contain 57 unique form/opcode/mnemonic combinations; the updated five-page PDF lists each once with count and first-seen sequence/PC. Render inspection and comparison of all 57 PDF rows against the CSV passed.
 - 2026-10-16T21:23Z [USER] User confirmed PR #27 merged; fetched `origin/main` at merge commit `98d2acf`. Task 27 started on `feature/27-blorb-media`.
 - 2026-10-16T21:30Z [CODE] Task 27 adds Blorb PNG/JPEG/Rect picture validation and Avalonia image decoding, AIFF PCM to WAV conversion, desktop macOS/Windows sample playback, Blorb desktop loading, and Z3 sound-effect resource dispatch. Ogg, tracker music, SONG, and V6 drawing remain unsupported.
 - 2026-10-16T21:30Z [TOOL] Task 27 formatter verification passed, Release build succeeded with 0 warnings/errors, and all 291 xUnit tests passed. Final diff review and PR publication pending.
@@ -71,6 +76,8 @@
 - 2026-10-16T18:28Z [TOOL] Task 15 local commit `06a90ce` and GitHub API commit `0950e1d` contain the same tree on `feature/15-quetzal-memory-chunks`; PR #16 is open at `https://github.com/porcellian/GrueGPT/pull/16` for manual merge. Apple Git HTTPS remains broken, and local/remote commit histories differ.
 
 ## [DISCOVERIES]
+- 2026-10-17T01:27Z [CODE] Opcode trace names need a one-position adjustment for 2OP opcodes because their encoded numbering begins at 1 while the mnemonic table is zero-based; regression coverage now checks Long `add`, Variable `print_char`, and Short `quit`.
+- 2026-10-17T01:27Z [TOOL] Local Zork replay required four waits for the river buoy, four shovel digs, dropping the torch before gas passages, and leaving non-treasures behind before the thief fight; the Loud Room can eject the player, so the verified guide handles re-entry by room.
 - 2026-10-16T21:30Z [CODE] Blorb v3 `Loop` metadata controls indefinite playback only when its repeats field is zero. Z3 `sound_effect` actions are prepare=1, start=2, stop=3, finish=4; AIFF sample audio can run on separate host backends without making Core depend on Avalonia.
 - 2026-10-16T20:56Z [CODE] ZSpec 1.1 §4.2.3 says indirect variable-reference operands are usually small constants. Zork's initial code uses this form, so the executor must resolve the literal reference number instead of rejecting it.
 - 2026-10-16T20:45Z [CODE] An empty CMem payload validly restores unchanged original dynamic memory; malformed zero-run coverage must use a lone zero byte. Task 22 also verifies service-level interoperability with independently framed IFZS containing UMem and an odd padded unknown chunk.
@@ -91,6 +98,8 @@
 - 2026-10-16T19:58Z [CODE] A host save requested while the Z3 executor is awaiting a command must record the current `read` instruction address as its direct-resume PC; otherwise restore skips reading the next command.
 
 ## [OUTCOMES]
+- 2026-10-17T01:27Z [CODE] Task 28 adds the original player route and complete opcode listing to `walkthroughs/zork1-maximum-score.pdf`; the local story, manual, hints, and play transcript remain untracked.
+- 2026-10-17T01:27Z [TOOL] PDF has 1,416 pages. Parsed PDF trace rows match CSV sequences 1–496,918 exactly, and rendered cover, route, first-trace, and final-trace pages were inspected.
 - 2026-10-16T21:30Z [CODE] Task 27 implements picture resource inspection for PNG/JPEG/Rect, Avalonia raster decoding, integer PCM AIFF conversion to WAV, and desktop sound-effect playback with prepare/start/stop/finish handling. README and `TASKS.md` updated; music formats and V6 rendering remain deferred.
 - 2026-10-16T21:30Z [TOOL] Task 27 Release build succeeded with 0 warnings/errors; xUnit passed 291 generated-fixture tests; `dotnet format --verify-no-changes` and `git diff --check` passed.
 - 2026-10-16T16:24Z [CODE] Task 11 adds `Z3OpcodeExecutor` and Version 3 random handling for legal opcode families, status/time mode, and checksum verification; task 12's checklist no longer includes quit/verify.

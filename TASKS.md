@@ -1,6 +1,6 @@
 # GrueGPT implementation tasks
 
-Each checkbox is a separate task and pull request. The explicit `Task N` labels are stable task IDs across sections. Before starting a task, create `feature/<task-number>-<brief-description>`. Use a conventional commit, update this checklist, run the relevant checks, and open a PR. Do not merge PRs automatically.
+Each checkbox is a separate task and pull request. Completed task IDs are stable. When inserting a task before unfinished work, keep completed IDs unchanged and renumber only the unfinished tasks after it. Before starting a task, create `feature/<task-number>-<brief-description>`. Use a conventional commit, update this checklist, run the relevant checks, and open a PR. Do not merge PRs automatically.
 
 ## Project foundation
 
@@ -47,10 +47,14 @@ Each checkbox is a separate task and pull request. The explicit `Task N` labels 
 - [x] **Task 26:** Add Blorb resource lookup and support applicable metadata, descriptions, frontispiece, palette, resolution, and Z-machine-specific chunks.
 - [x] **Task 27:** Add applicable Blorb picture and sound resource decoding/playback, with tests for supported formats and malformed resources.
 
+## Z3 completion and regression
+
+- [x] **Task 28:** Complete Zork I with the highest achievable score; fix interpreter issues found during play, add optional opcode tracing, and publish a concise step-by-step PDF walkthrough listing every unique opcode/mnemonic combination encountered in a clean winning run, with instruction form recorded. Keep story and reference files local.
+
 ## Later phase: Z-machine versions 4–8
 
-- [ ] **Task 28:** Add version-aware headers, memory/address rules, instruction availability, and Quetzal resume behavior for versions 4–5 and 7–8.
-- [ ] **Task 29:** Add version 4–5 opcodes and screen/input features, including window, cursor, style, timed input, and extended save/restore behavior.
-- [ ] **Task 30:** Add version 6 windowing, graphics, picture, mouse/menu, sound, and scaling behavior with Blorb resources.
-- [ ] **Task 31:** Add version 7–8 packed-address and routine/string address rules, plus remaining version-specific opcodes and state behavior.
-- [ ] **Task 32:** Add cross-version conformance and save interoperability tests using only generated or redistribution-cleared fixtures.
+- [ ] **Task 29:** Add version-aware headers, memory/address rules, instruction availability, and Quetzal resume behavior for versions 4–5 and 7–8.
+- [ ] **Task 30:** Add version 4–5 opcodes and screen/input features, including window, cursor, style, timed input, and extended save/restore behavior.
+- [ ] **Task 31:** Add version 6 windowing, graphics, picture, mouse/menu, sound, and scaling behavior with Blorb resources.
+- [ ] **Task 32:** Add version 7–8 packed-address and routine/string address rules, plus remaining version-specific opcodes and state behavior.
+- [ ] **Task 33:** Add cross-version conformance and save interoperability tests using only generated or redistribution-cleared fixtures.

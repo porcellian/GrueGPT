@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using GrueGPT.Core.Stories;
 
 namespace GrueGPT.Cli;
@@ -5,7 +7,7 @@ namespace GrueGPT.Cli;
 /// <summary>Loads and runs one Version 3 story using the shared interpreter core.</summary>
 public static class CliApplication
 {
-    private const string Usage = "Usage: GrueGPT.Cli <story-file> [--restore <save-file>]";
+    private const string Usage = "Usage: GrueGPT.Cli <story-file> [--restore <save-file>] [--trace <trace.csv>] [--seed <integer>]";
 
     /// <summary>Runs the CLI with injectable text streams for automated tests.</summary>
     public static async Task<int> RunAsync(
@@ -26,7 +28,7 @@ public static class CliApplication
             return 0;
         }
 
-        if (!TryParseArguments(args, out string? storyPath, out string? restorePath, out string? argumentError))
+        if (!TryParseArguments(args, out string? storyPath, out string? restorePath, out string? tracePath, out int? seed, out string? argumentError))
         {
             await error.WriteLineAsync(argumentError).ConfigureAwait(false);
             await error.WriteLineAsync(Usage).ConfigureAwait(false);
@@ -66,11 +68,27 @@ public static class CliApplication
         }
 
         CliInterpreterIO io = new(input, output, error);
-        Z3OpcodeExecutor executor = new(state, io);
+        StreamWriter? traceWriter = null;
         try
         {
+            if (tracePath is not null)
+            {
+                traceWriter = new StreamWriter(tracePath, append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                traceWriter.WriteLine("sequence,pc,form,opcode_number,mnemonic");
+            }
+
+            Z3OpcodeExecutor executor = new(
+                state,
+                io,
+                randomNumberGenerator: seed is null ? null : new Z3RandomNumberGenerator(seed),
+                traceSink: traceWriter is null ? null : new CsvTraceSink(traceWriter));
             await executor.RunAsync(cancellationToken).ConfigureAwait(false);
             return 0;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            await error.WriteLineAsync($"Unable to write opcode trace '{tracePath}': {exception.Message}").ConfigureAwait(false);
+            return 1;
         }
         catch (OperationCanceledException)
         {
@@ -81,16 +99,24 @@ public static class CliApplication
             // The executor reports its instruction and failure through the host boundary.
             return 1;
         }
+        finally
+        {
+            traceWriter?.Dispose();
+        }
     }
 
     private static bool TryParseArguments(
         IReadOnlyList<string> args,
         out string? storyPath,
         out string? restorePath,
+        out string? tracePath,
+        out int? seed,
         out string? error)
     {
         storyPath = null;
         restorePath = null;
+        tracePath = null;
+        seed = null;
         error = null;
         if (args.Count == 0 || string.IsNullOrWhiteSpace(args[0]) || args[0].StartsWith("-", StringComparison.Ordinal))
         {
@@ -101,14 +127,40 @@ public static class CliApplication
         storyPath = args[0];
         for (int index = 1; index < args.Count; index++)
         {
-            if (args[index] != "--restore" || restorePath is not null || index + 1 >= args.Count
-                || string.IsNullOrWhiteSpace(args[index + 1]) || args[index + 1].StartsWith("-", StringComparison.Ordinal))
+            string option = args[index];
+            if (option is not "--restore" and not "--trace" and not "--seed"
+                || (option == "--restore" && restorePath is not null)
+                || (option == "--trace" && tracePath is not null)
+                || (option == "--seed" && seed is not null)
+                || index + 1 >= args.Count || string.IsNullOrWhiteSpace(args[index + 1])
+                || (option != "--seed" && args[index + 1].StartsWith("-", StringComparison.Ordinal)))
             {
-                error = $"Invalid argument '{args[index]}'.";
+                error = $"Invalid argument '{option}'.";
                 return false;
             }
 
-            restorePath = args[++index];
+            string value = args[++index];
+            if (option == "--seed")
+            {
+                if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsedSeed))
+                {
+                    error = $"Invalid random seed '{value}'.";
+                    return false;
+                }
+
+                seed = parsedSeed;
+                continue;
+            }
+
+            string path = value;
+            if (option == "--restore")
+            {
+                restorePath = path;
+            }
+            else
+            {
+                tracePath = path;
+            }
         }
 
         return true;
@@ -120,4 +172,15 @@ public static class CliApplication
             or ArgumentException
             or NotSupportedException
             or StoryLoadException;
+
+    private sealed class CsvTraceSink(TextWriter writer) : IZ3InstructionTraceSink
+    {
+        public void OnInstruction(Z3OpcodeTraceEntry instruction) => writer.WriteLine(string.Join(
+            ",",
+            instruction.Sequence.ToString(CultureInfo.InvariantCulture),
+            $"0x{instruction.ProgramCounter:X4}",
+            instruction.Form,
+            instruction.OpcodeNumber.ToString(CultureInfo.InvariantCulture),
+            instruction.Mnemonic));
+    }
 }
