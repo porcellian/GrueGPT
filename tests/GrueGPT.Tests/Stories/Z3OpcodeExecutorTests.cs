@@ -410,6 +410,18 @@ public sealed class Z3OpcodeExecutorTests
     }
 
     [Fact]
+    public void ExplicitRandomSeedProducesRepeatableSequence()
+    {
+        Z3RandomNumberGenerator first = new(8675309);
+        Z3RandomNumberGenerator second = new(8675309);
+
+        ushort[] firstSequence = [first.Next(100), first.Next(100), first.Next(100)];
+        ushort[] secondSequence = [second.Next(100), second.Next(100), second.Next(100)];
+
+        Assert.Equal(firstSequence, secondSequence);
+    }
+
+    [Fact]
     public async Task UpdatesStatusFromTheHeaderRoomAndGlobals()
     {
         // Object 1 has the short name "a" at its property table.

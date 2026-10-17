@@ -16,6 +16,7 @@ public sealed class Z3OpcodeExecutor
     private readonly IZ3ScreenIO? _screenIO;
     private readonly IZ3SaveRestoreIO? _saveRestoreIO;
     private readonly IZ3SoundIO? _soundIO;
+    private readonly IZ3InstructionTraceSink? _traceSink;
     private readonly BlorbFile? _blorb;
     private readonly Dictionary<uint, byte[]> _preparedSounds = [];
     private readonly Z3ScreenModel _screen;
@@ -26,13 +27,15 @@ public sealed class Z3OpcodeExecutor
     private byte _inputStream;
     private bool _halted;
     private int? _activeReadInstructionAddress;
+    private long _instructionSequence;
 
     public Z3OpcodeExecutor(
         Z3ExecutionState state,
         IInterpreterIO io,
         Z3RandomNumberGenerator? randomNumberGenerator = null,
         Z3ScreenModel? screenModel = null,
-        BlorbFile? blorb = null)
+        BlorbFile? blorb = null,
+        IZ3InstructionTraceSink? traceSink = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(io);
@@ -42,6 +45,7 @@ public sealed class Z3OpcodeExecutor
         _screenIO = io as IZ3ScreenIO;
         _saveRestoreIO = io as IZ3SaveRestoreIO;
         _soundIO = io as IZ3SoundIO;
+        _traceSink = traceSink;
         _blorb = blorb;
         _screen = screenModel ?? new Z3ScreenModel();
         _decoder = new Z3InstructionDecoder(state);
@@ -117,6 +121,12 @@ public sealed class Z3OpcodeExecutor
         }
 
         Z3DecodedInstruction instruction = _decoder.DecodeNext(evaluateVariableOperands: false);
+        _traceSink?.OnInstruction(new Z3OpcodeTraceEntry(
+            ++_instructionSequence,
+            instruction.Address,
+            instruction.Form,
+            instruction.OpcodeNumber,
+            Z3OpcodeNames.GetMnemonic(instruction)));
         await ExecuteInstructionAsync(instruction, cancellationToken).ConfigureAwait(false);
         return !_halted;
     }

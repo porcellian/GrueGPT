@@ -21,6 +21,21 @@ public sealed class CliApplicationTests
     }
 
     [Fact]
+    public async Task RunAsyncRejectsANonNumericRandomSeed()
+    {
+        using TemporaryFiles files = new();
+        files.WriteStory(new SyntheticStoryBuilder().WriteByte(0x2000, 0xBA));
+        using StringReader input = new(string.Empty);
+        using StringWriter output = new();
+        using StringWriter error = new();
+
+        int exitCode = await CliApplication.RunAsync([files.StoryPath, "--seed", "nope"], input, output, error);
+
+        Assert.Equal(2, exitCode);
+        Assert.Contains("Invalid random seed", error.ToString());
+    }
+
+    [Fact]
     public async Task RunAsyncLoadsStoryAndWritesStoryText()
     {
         using TemporaryFiles files = new();
@@ -37,6 +52,48 @@ public sealed class CliApplicationTests
 
         Assert.True(exitCode == 0, error.ToString());
         Assert.Contains("H", output.ToString());
+    }
+
+    [Fact]
+    public async Task TraceOptionRecordsEveryInstructionWithoutChangingStoryOutput()
+    {
+        using TemporaryFiles files = new();
+        files.WriteStory(new SyntheticStoryBuilder()
+            .WriteByte(0x2000, 0x14) // long-form add 1 + 2 -> global 0
+            .WriteByte(0x2001, 1)
+            .WriteByte(0x2002, 2)
+            .WriteByte(0x2003, 16)
+            .WriteByte(0x2004, 0xE5) // print_char
+            .WriteByte(0x2005, 0x7F)
+            .WriteByte(0x2006, (byte)'H')
+            .WriteByte(0x2007, 0xBA)); // quit
+        using StringReader plainInput = new(string.Empty);
+        using StringWriter plainOutput = new();
+        using StringWriter plainError = new();
+
+        int plainExitCode = await CliApplication.RunAsync([files.StoryPath], plainInput, plainOutput, plainError);
+
+        using StringReader tracedInput = new(string.Empty);
+        using StringWriter tracedOutput = new();
+        using StringWriter tracedError = new();
+        int tracedExitCode = await CliApplication.RunAsync(
+            [files.StoryPath, "--trace", files.TracePath],
+            tracedInput,
+            tracedOutput,
+            tracedError);
+
+        Assert.Equal(0, plainExitCode);
+        Assert.Equal(0, tracedExitCode);
+        Assert.Equal(plainOutput.ToString(), tracedOutput.ToString());
+        Assert.Equal(plainError.ToString(), tracedError.ToString());
+        Assert.Equal(
+            [
+                "sequence,pc,form,opcode_number,mnemonic",
+                "1,0x2000,Long,20,add",
+                "2,0x2004,Variable,5,print_char",
+                "3,0x2007,Short,10,quit"
+            ],
+            File.ReadAllLines(files.TracePath));
     }
 
     [Fact]
@@ -118,6 +175,8 @@ public sealed class CliApplicationTests
         public string StoryPath => Path.Combine(_directory, "synthetic.z3");
 
         public string SavePath => Path.Combine(_directory, "synthetic.sav");
+
+        public string TracePath => Path.Combine(_directory, "synthetic-trace.csv");
 
         public TemporaryFiles() => Directory.CreateDirectory(_directory);
 

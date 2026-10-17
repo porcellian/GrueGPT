@@ -198,6 +198,10 @@ with:
 dotnet run --project src/GrueGPT.Cli -- stories/zork1.z3 --restore saves/zork1.sav
 ```
 
+Use `--trace trace.csv` to record every executed instruction as CSV without
+changing story output. Use `--seed <integer>` to select a repeatable random
+sequence for debugging and replay; normal play uses a random seed.
+
 The runner uses the same Version 3 story loader, opcode executor, and Quetzal
 restore service as the desktop app. It does not require stories to be tracked
 in the repository.
